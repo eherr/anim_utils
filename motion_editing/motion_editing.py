@@ -171,9 +171,9 @@ class KeyframeConstraint(object):
 
 
 class MotionEditing(object):
-    def __init__(self, skeleton, algorithm_settings):
+    def __init__(self, skeleton, ik_settings):
         self.skeleton = skeleton
-        self._ik_settings = algorithm_settings["inverse_kinematics_settings"]
+        self._ik_settings = ik_settings
         self.window = int(self._ik_settings["interpolation_window"])
         self.transition_window = int(self._ik_settings["transition_window"])
         self.verbose = False
