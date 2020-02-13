@@ -49,18 +49,14 @@ DEFAULT_ROTATION_ORDER = ['Xrotation','Yrotation','Zrotation']
 
 
 class BVHReader(object):
-
     """Biovision file format class
 
     Parameters
     ----------
      * infile: string
     \t path to BVH file that is loaded initially
-
     """
-
     def __init__(self, infilename=""):
-
         self.node_names = OrderedDict()
         self.node_channels = []
         self.parent_dict = {}
@@ -70,13 +66,11 @@ class BVHReader(object):
         if infilename != "":
             infile = open(infilename, "r")
             lines = infile.readlines()
-            lines2 = []
+            _lines = []
             for l in lines:
                 if l.strip() != "":
-                    lines2.append(l)
-            lines = lines2
-
-            self.process_lines(lines)
+                    _lines.append(l)
+            self.process_lines(_lines)
             infile.close()
         self.filename = os.path.split(infilename)[-1]
         self.animated_joints = None
