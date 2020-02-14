@@ -40,10 +40,6 @@ def convert_euler_to_quat(euler_frame, joints):
 
 
 class SkeletonPoseModel(object):
-    """
-    TODO wrap parameters to allow use with constrained euler, e.g. to rotate an arm using a single parameter
-    then have a skeleton model with realistic degrees of freedom and also predefined ik-chains that is initialized using a frame
-    """
     def __init__(self, skeleton, use_euler=False):
         self.channels = skeleton.get_channels()
         pose_parameters = skeleton.reference_frame
@@ -110,12 +106,6 @@ class SkeletonPoseModel(object):
             p_idx += n_channels
         return self.pose_parameters
 
-    #def set_rotation_of_joint(self, joint_name, axis, angle):
-    #    n_channels = self.n_channels[joint_name]
-    #    f_start = self.channels_start[joint_name]
-    #    f_end = f_start + n_channels
-    #    return
-
     def extract_parameters_indices(self, joint_name):
         f_start = self.channels_start[joint_name]
         f_end = f_start + self.n_channels[joint_name]
@@ -123,7 +113,6 @@ class SkeletonPoseModel(object):
 
     def extract_parameters(self, joint_name):
         f_start, f_end = self.extract_parameters_indices(joint_name)
-        #print joint_name, f_start, f_end, self.pose_parameters[f_start: f_end].tolist(), len(self.pose_parameters)
         return self.pose_parameters[f_start: f_end]
 
     def get_vector(self):
@@ -138,7 +127,7 @@ class SkeletonPoseModel(object):
         return self.skeleton.nodes[target_joint].get_global_position(self.pose_parameters, use_cache=True)#get_vector()
 
     def evaluate_position(self, target_joint):
-        return self.skeleton.nodes[target_joint].get_global_position(self.pose_parameters)#get_vector()
+        return self.skeleton.nodes[target_joint].get_global_position(self.pose_parameters)
 
     def evaluate_orientation(self, target_joint):
         return self.skeleton.nodes[target_joint].get_global_orientation_quaternion(self.pose_parameters)
@@ -156,18 +145,14 @@ class SkeletonPoseModel(object):
                 self.set_channel_values(euler_angles, [free_joint])
             else:
                 q = euler_to_quaternion(euler_angles)
-                #print("apply bound")
                 self.set_channel_values(q, [free_joint])
         return
 
     def apply_bound_on_joint(self, euler_angles, bound):
-        #self.pose_parameters[start+bound["dim"]] =
-        #print euler_angles
         if "min" in list(bound.keys()):
             euler_angles[bound["dim"]] = max(euler_angles[bound["dim"]],bound["min"])
         if "max" in list(bound.keys()):
             euler_angles[bound["dim"]] = min(euler_angles[bound["dim"]],bound["max"])
-        #print "after",euler_angles
 
     def get_euler_angles(self, joint):
         if self.use_euler:
@@ -221,8 +206,6 @@ class SkeletonPoseModel(object):
         target_dir /= np.linalg.norm(target_dir)
         cross_dir = np.dot(m, self.relative_hand_cross)
         cross_dir /= np.linalg.norm(cross_dir)
-        #print "set hand orientation"
-        #print target_dir, cross_dir
         self.point_in_direction(joint_name, target_dir[:3], cross_dir[:3])
 
     def set_hand_orientation(self, joint_name, orientation):
@@ -305,14 +288,4 @@ class SkeletonPoseModel(object):
             return None
         return self.skeleton.parent_dict[joint_name]
 
-    def orient_hands_to_each_other(self):
-        l = "LeftHand"
-        r = "RightHand"
-        left_hand_position = self.skeleton.nodes[l].get_global_position(self.pose_parameters)
-        right_hand_position = self.skeleton.nodes[r].get_global_position(self.pose_parameters, use_cache=True)
-        ldir = right_hand_position - left_hand_position
-        ldir /= np.linalg.norm(ldir)
-        rdir = -ldir
-        self.point_hand_up_dir_in_direction(l, ldir, self.get_parent_joint(l))
-        self.point_hand_up_dir_in_direction(r, rdir, self.get_parent_joint(r))
 
