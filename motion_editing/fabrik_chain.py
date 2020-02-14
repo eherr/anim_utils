@@ -23,7 +23,7 @@
 """
  https://www.sciencedirect.com/science/article/pii/S1524070311000178?via%3Dihub
 
- from pseudocode by Renzo Poddighe
+ based on the pseudocode by Renzo Poddighe
  https://project.dke.maastrichtuniversity.nl/robotlab/wp-content/uploads/Bachelor-thesis-Renzo-Poddighe.pdf
 """
 import math
@@ -130,7 +130,7 @@ class FABRIKBone(object):
 ROOT_OFFSET = np.array([0,0,0], np.float)
 
 class FABRIKChain(object):
-    def __init__(self, skeleton, bones, node_order, tolerance=0.01, delta_tolerance=0.0001, max_iter=500, frame_offset=3, root_offset=ROOT_OFFSET, activate_constraints=False, visualize=False):
+    def __init__(self, skeleton, bones, node_order, tolerance=0.01, delta_tolerance=0.0001, max_iter=500, frame_offset=3, root_offset=ROOT_OFFSET, activate_constraints=False):
         self.skeleton = skeleton
         self.bones = bones
         self.node_order = node_order
@@ -144,25 +144,6 @@ class FABRIKChain(object):
         self.activate_constraints = activate_constraints
         self.frame_offset = frame_offset
         self.delta_tolerance = delta_tolerance
-        self.visualize = visualize
-        if self.visualize:
-            slices = 20
-            stacks = 20
-            radius = 1
-            self.sphere_renderer = SphereRenderer(slices, stacks, radius, material=Materials.blue)
-            self.root_render = SphereRenderer(slices, stacks, 2*radius, material=Materials.red)
-            self.line_renderer = DebugLineRenderer([0,0,0], [0,1,0])
-            self.lights = []
-
-    def draw(self, m, v, pr, l):
-        #print(self.node_order)
-        #print(self.bones.keys())
-        for node in self.node_order:
-            m[3, :3] = self.bones[node].position
-            if self.bones[node].is_root:
-                self.root_render.draw(m, v, pr, l)
-            else:
-                self.sphere_renderer.draw(m, v, pr, l)
 
     def set_positions_from_frame(self, frame, parent_length):
         self.skeleton.clear_cached_global_matrices()
@@ -360,23 +341,6 @@ class FABRIKChain(object):
             aligned_parent_q = normalize(aligned_parent_q)
             frame[o - 4:o] = aligned_parent_q
 
-        if False:
-            # new_node_pos = self.skeleton.nodes[node].children[0].get_global_position(frame)
-            # diff = np.linalg.norm(new_node_pos - self.target)
-            q = np.array(frame[o-4:o])
-            av = quaternion_to_av(q)
-            e = np.degrees(euler_from_quaternion(q))
-            if diff > 1:
-                print("!!!!!!!!!!!!!!!!!!!!!!!!error", av, sign(q[0]), e)
-                #frame[o:o + 4] = old_q
-                #frame[o - 4:o] = old_parent_q
-            else:
-                print("!!!!!!!!!!!!!!!!!!!!!!!!everything fine", av, sign(q[0]), e)
-
-                #print("pos3", new_node_pos, self.target)
-        #frame[o:o + 4] = old_q
-        #frame[o - 4:o] = old_parent_q
-
     def apply_constraint_with_swing_global(self, node, frame, o, eps=0.01):
         old_q = np.array(frame[o:o + 4])
         next_node = self.bones[node].child
@@ -412,9 +376,6 @@ class FABRIKChain(object):
         new_node_pos = self.skeleton.nodes[node].children[0].get_global_position(frame)
         diff = np.linalg.norm(new_node_pos - old_node_pos)
         if diff > eps:
-            # apply change swing to parent
-
-            # print("pos1", new_node_pos, old_node_pos, self.target)
             parent_q = frame[o - 4:o]
             new_parent_q = quaternion_multiply(parent_q, delta_q)
             new_parent_q = normalize(new_parent_q)
@@ -443,13 +404,7 @@ class FABRIKChain(object):
         frame[o:o + 4] = new_q
         new_global_m = self.skeleton.nodes[next_node].get_global_matrix(frame)[:3,:3]
         delta_global_m = np.dot(np.linalg.inv(new_global_m), target_global_m)
-
-        #parent_global_m = self.skeleton.nodes[parent_node].get_global_matrix(frame)[:3,:3]
-        #delta_local_parent_m = np.dot(np.linalg.inv(parent_global_m), delta_global_m)
         actual_delta_q = normalize(quaternion_from_matrix(delta_global_m))
-       # actual_delta_q = to_local_cos(self.skeleton, parent_node, frame, actual_delta_q)
-        # apply change swing to parent
-        # delta_q = quaternion_multiply(new_q, quaternion_inverse(q))
         parent_q = frame[o - 4:o]
         new_parent_q = quaternion_multiply(actual_delta_q, parent_q)
         new_parent_q = normalize(new_parent_q)
