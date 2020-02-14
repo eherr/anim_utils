@@ -3,4 +3,4 @@ scipy
 matplotlib
 transformations
 bson
-request
+requests
