@@ -31,9 +31,30 @@ import math
 import numpy as np
 from transformations import quaternion_multiply, quaternion_about_axis, quaternion_matrix, quaternion_from_matrix, quaternion_inverse
 from .utils import normalize, to_local_cos, project_vec3
-from ..retargeting.utils import find_rotation_between_vectors
 import scipy.integrate as integrate
 
+
+def quaternion_from_axis_angle(axis, angle):
+    q = [1,0,0,0]
+    q[1] = axis[0] * math.sin(angle / 2)
+    q[2] = axis[1] * math.sin(angle / 2)
+    q[3] = axis[2] * math.sin(angle / 2)
+    q[0] = math.cos(angle / 2)
+    return normalize(q)
+
+
+def find_rotation_between_vectors(a, b):
+    """http://math.stackexchange.com/questions/293116/rotating-one-3d-vector-to-another"""
+    if np.array_equiv(a, b):
+        return [1, 0, 0, 0]
+
+    axis = normalize(np.cross(a, b))
+    dot = np.dot(a, b)
+    if dot >= 1.0:
+        return [1, 0, 0, 0]
+    angle = math.acos(dot)
+    q = quaternion_from_axis_angle(axis, angle)
+    return q
 
 def calculate_angle(upper_limb, lower_limb, ru, rl, target_length):
     upper_limb_sq = upper_limb * upper_limb
