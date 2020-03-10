@@ -129,7 +129,7 @@ class SkeletonNodeBase(object):
         joint_desc = dict()
         joint_desc["name"] = self.node_name
         if type(self.offset) == list:
-            offset = self.offset
+            offset = list(self.offset)
         else:
             offset = self.offset.tolist()
         offset[0] *= -scale
@@ -138,7 +138,7 @@ class SkeletonNodeBase(object):
         joint_desc["offset"] = offset
        
         if type(self.rotation) == list:
-            rotation = self.rotation
+            rotation = list(self.rotation)
         else:
             rotation = self.rotation.tolist()
         rotation[0] *= -scale
