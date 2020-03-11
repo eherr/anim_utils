@@ -192,6 +192,7 @@ def align_root_joint(axes, global_src_x_vec, max_iter_count=10):
         not_aligned = a_y > 0.1 or a_x > 0.1 and iter_count < max_iter_count
     return q
 
+EPS = 0.01
 
 def align_joint(new_skeleton, free_joint_name, local_target_axes, global_src_up_vec, global_src_x_vec, joint_cos_map, apply_spine_fix=False):
     # first align the twist axis
@@ -210,7 +211,7 @@ def align_joint(new_skeleton, free_joint_name, local_target_axes, global_src_up_
         q180 = normalize(q180)
         q = quaternion_multiply(q180, q)
         q = normalize(q)
-    elif abs(dot) > 0.1:
+    elif abs(dot) > EPS:
         qy, axes = align_axis(axes, "y", global_src_up_vec)
         q = quaternion_multiply(qy, q)
         q = normalize(q)
