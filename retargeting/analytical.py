@@ -295,17 +295,15 @@ class Retargeting(object):
 
     def rotate_bone(self, src_name, target_name, src_frame, target_frame, guess):
         q = guess
-        if src_name not in self.src_child_map.keys() or self.src_child_map[src_name] is None:
-            #print("dont map", src_name, target_name)
-            return q
         src_x_axis = self.src_cos_map[src_name]["x"]
         src_up_axis = self.src_cos_map[src_name]["y"]
-        if self.src_child_map[src_name] in self.src_to_target_joint_map and self.src_cos_map[src_name]["y"] is not None and self.target_cos_map[target_name]["y"] is not None:
+        if self.src_cos_map[src_name]["y"] is not None and self.target_cos_map[target_name]["y"] is not None:
             global_m = self.src_skeleton.nodes[src_name].get_global_matrix(src_frame)[:3, :3]
             global_src_up_vec = normalize(np.dot(global_m, src_up_axis))
             global_src_x_vec = normalize(np.dot(global_m, src_x_axis))
             apply_spine_fix = self.apply_spine_fix and target_name in self.target_spine_joints
             q = find_rotation_analytically(self.target_skeleton, target_name, global_src_up_vec, global_src_x_vec, target_frame, self.target_cos_map, apply_spine_fix, self.apply_root_fix)
+
         return q
 
     def rotate_bone_fast(self, src_name, target_name, src_frame, target_frame, quess):
