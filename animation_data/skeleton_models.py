@@ -1265,7 +1265,7 @@ JOINT_CONSTRAINTS["head"] = {"type":"head", "axis": [0,1,0], "tk1": -np.radians(
 JOINT_CONSTRAINTS["left_hold_point"] = {"type":"static"}
 JOINT_CONSTRAINTS["right_hold_point"] = {"type":"static"}
 
-STANDARD_MIRROR_MAP = {"left_hip": "right_hip",
+STANDARD_MIRROR_MAP_LEFT = {"left_hip": "right_hip",
                        "left_knee": "right_knee",
                        "left_ankle":"right_ankle",
                        "left_clavicle": "right_clavicle",
@@ -1276,36 +1276,39 @@ STANDARD_MIRROR_MAP = {"left_hip": "right_hip",
                        "left_hold_point": "right_hold_point"
                         }
 
-STANDARD_MIRROR_MAP["left_thumb_base"] = "right_thumb_base"
-STANDARD_MIRROR_MAP["left_thumb_mid"] = "right_thumb_mid"
-STANDARD_MIRROR_MAP["left_thumb_tip"] = "right_thumb_tip"
-STANDARD_MIRROR_MAP["left_thumb_end"] = "right_thumb_end"
+STANDARD_MIRROR_MAP_LEFT["left_thumb_base"] = "right_thumb_base"
+STANDARD_MIRROR_MAP_LEFT["left_thumb_mid"] = "right_thumb_mid"
+STANDARD_MIRROR_MAP_LEFT["left_thumb_tip"] = "right_thumb_tip"
+STANDARD_MIRROR_MAP_LEFT["left_thumb_end"] = "right_thumb_end"
 
-STANDARD_MIRROR_MAP["left_index_finger_root"] = "right_index_finger_root"
-STANDARD_MIRROR_MAP["left_index_finger_base"] = "right_index_finger_base"
-STANDARD_MIRROR_MAP["left_index_finger_mid"] = "right_index_finger_mid"
-STANDARD_MIRROR_MAP["left_index_finger_tip"] = "right_index_finger_tip"
-STANDARD_MIRROR_MAP["left_index_finger_end"] = "right_index_finger_end"
+STANDARD_MIRROR_MAP_LEFT["left_index_finger_root"] = "right_index_finger_root"
+STANDARD_MIRROR_MAP_LEFT["left_index_finger_base"] = "right_index_finger_base"
+STANDARD_MIRROR_MAP_LEFT["left_index_finger_mid"] = "right_index_finger_mid"
+STANDARD_MIRROR_MAP_LEFT["left_index_finger_tip"] = "right_index_finger_tip"
+STANDARD_MIRROR_MAP_LEFT["left_index_finger_end"] = "right_index_finger_end"
 
-STANDARD_MIRROR_MAP["left_middle_finger_root"] = "right_middle_finger_root"
-STANDARD_MIRROR_MAP["left_middle_finger_base"] = "right_middle_finger_base"
-STANDARD_MIRROR_MAP["left_middle_finger_mid"] = "right_middle_finger_mid"
-STANDARD_MIRROR_MAP["left_middle_finger_tip"] = "right_middle_finger_tip"
-STANDARD_MIRROR_MAP["left_middle_finger_end"] = "right_middle_finger_end"
+STANDARD_MIRROR_MAP_LEFT["left_middle_finger_root"] = "right_middle_finger_root"
+STANDARD_MIRROR_MAP_LEFT["left_middle_finger_base"] = "right_middle_finger_base"
+STANDARD_MIRROR_MAP_LEFT["left_middle_finger_mid"] = "right_middle_finger_mid"
+STANDARD_MIRROR_MAP_LEFT["left_middle_finger_tip"] = "right_middle_finger_tip"
+STANDARD_MIRROR_MAP_LEFT["left_middle_finger_end"] = "right_middle_finger_end"
 
-STANDARD_MIRROR_MAP["left_ring_finger_root"] = "right_ring_finger_root"
-STANDARD_MIRROR_MAP["left_ring_finger_base"] = "right_ring_finger_base"
-STANDARD_MIRROR_MAP["left_ring_finger_mid"] = "right_ring_finger_mid"
-STANDARD_MIRROR_MAP["left_ring_finger_tip"] = "right_ring_finger_tip"
-STANDARD_MIRROR_MAP["left_ring_finger_end"] = "right_ring_finger_end"
+STANDARD_MIRROR_MAP_LEFT["left_ring_finger_root"] = "right_ring_finger_root"
+STANDARD_MIRROR_MAP_LEFT["left_ring_finger_base"] = "right_ring_finger_base"
+STANDARD_MIRROR_MAP_LEFT["left_ring_finger_mid"] = "right_ring_finger_mid"
+STANDARD_MIRROR_MAP_LEFT["left_ring_finger_tip"] = "right_ring_finger_tip"
+STANDARD_MIRROR_MAP_LEFT["left_ring_finger_end"] = "right_ring_finger_end"
 
-STANDARD_MIRROR_MAP["left_pinky_finger_root"] = "right_pinky_finger_root"
-STANDARD_MIRROR_MAP["left_pinky_finger_base"] = "right_pinky_finger_base"
-STANDARD_MIRROR_MAP["left_pinky_finger_mid"] = "right_pinky_finger_mid"
-STANDARD_MIRROR_MAP["left_pinky_finger_tip"] = "right_pinky_finger_tip"
-STANDARD_MIRROR_MAP["left_pinky_finger_end"] = "right_pinky_finger_end"
+STANDARD_MIRROR_MAP_LEFT["left_pinky_finger_root"] = "right_pinky_finger_root"
+STANDARD_MIRROR_MAP_LEFT["left_pinky_finger_base"] = "right_pinky_finger_base"
+STANDARD_MIRROR_MAP_LEFT["left_pinky_finger_mid"] = "right_pinky_finger_mid"
+STANDARD_MIRROR_MAP_LEFT["left_pinky_finger_tip"] = "right_pinky_finger_tip"
+STANDARD_MIRROR_MAP_LEFT["left_pinky_finger_end"] = "right_pinky_finger_end"
 
+STANDARD_MIRROR_MAP_RIGHT = dict()
+for key, value in STANDARD_MIRROR_MAP_LEFT.items():
+    STANDARD_MIRROR_MAP_RIGHT[value] = key
 
-keys = list(STANDARD_MIRROR_MAP.keys())
-for k in keys:
-    STANDARD_MIRROR_MAP[STANDARD_MIRROR_MAP[k]] = k
+STANDARD_MIRROR_MAP = dict()
+STANDARD_MIRROR_MAP.update(STANDARD_MIRROR_MAP_LEFT)
+STANDARD_MIRROR_MAP.update(STANDARD_MIRROR_MAP_RIGHT)
