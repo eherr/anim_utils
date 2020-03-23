@@ -1199,7 +1199,7 @@ FINGER_JOINTS = ["left_thumb_base","left_thumb_mid", "left_thumb_tip","left_thum
                     "left_index_finger_root","left_index_finger_base","left_index_finger_mid", "left_index_finger_tip","left_index_finger_end",
                     "left_middle_finger_root","left_middle_finger_base","left_middle_finger_mid","left_middle_finger_tip","left_middle_finger_end",
                     "left_ring_finger_root","left_ring_finger_base","left_ring_finger_mid","left_ring_finger_tip", "left_ring_finger_end",
-                    "left_pinky_finger_root","left_pinky_finger_base","left_pinky_finger_mid","left_pinky_finger_tip", "left_pinky_finger_end"
+                    "left_pinky_finger_root","left_pinky_finger_base","left_pinky_finger_mid","left_pinky_finger_tip", "left_pinky_finger_end",
                    
                     "right_thumb_base","right_thumb_mid","right_thumb_tip","right_thumb_end",
                     "right_index_finger_root","right_index_finger_base","right_index_finger_mid","right_index_finger_tip","right_index_finger_end",
