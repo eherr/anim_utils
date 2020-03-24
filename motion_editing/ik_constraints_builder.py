@@ -131,7 +131,7 @@ class IKConstraintsBuilder(object):
         
     def generate_orientation_constraint_from_frame(self, frame, joint_name):
         if joint_name in self.skeleton.nodes:
-            m  = self.skeleton.nodes[joint_name].get_global_matrix(frame)[:3,:3]
+            m  = self.skeleton.nodes[joint_name].get_global_matrix(frame)#[:3,:3]
             return quaternion_from_matrix(m)
 
     def convert_to_ik_constraints_with_relative(self, frames, constraints, frame_offset=0, time_function=None, constrain_orientation=True):
