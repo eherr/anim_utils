@@ -165,7 +165,7 @@ class MotionVector(object):
             self.append_frames_generic(new_frames)
 
     def export(self, skeleton, output_filename, add_time_stamp=False):
-        bvh_writer = BVHWriter(None, skeleton, self.frames, skeleton.frame_time, True)
+        bvh_writer = BVHWriter(None, skeleton, self.frames, self.frame_time, True)
         if add_time_stamp:
             output_filename = output_filename + "_" + \
                        str(datetime.now().strftime("%d%m%y_%H%M%S")) + ".bvh"
