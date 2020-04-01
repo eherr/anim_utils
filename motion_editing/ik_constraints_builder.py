@@ -28,8 +28,9 @@ from anim_utils.motion_editing.motion_editing import KeyframeConstraint
 from .ik_constraints import SPATIAL_CONSTRAINT_TYPE_KEYFRAME_POSITION, SPATIAL_CONSTRAINT_TYPE_KEYFRAME_RELATIVE_POSITION, SUPPORTED_CONSTRAINT_TYPES
 
 class IKConstraintsBuilder(object):
-    def __init__(self, skeleton):
+    def __init__(self, skeleton, force_orientation=False):
         self.skeleton = skeleton
+        self.force_orientation = force_orientation
 
     def convert_to_ik_constraints(self, constraints, frame_offset=0, time_function=None, constrain_orientation=True):
         ik_constraints = collections.OrderedDict()
@@ -148,7 +149,7 @@ class IKConstraintsBuilder(object):
             else:
                 print("no end keyframe defined")
                 end_frame_idx = start_frame_idx + 1
-            if c.orientation is None:
+            if c.orientation is None and self.force_orientation:
                 c.orientation = self.generate_orientation_constraint_from_frame(frames[start_frame_idx], c.joint_name)
 
             base_ik_constraint = self.convert_mg_constraint_to_ik_constraint(start_frame_idx, c, constrain_orientation)
