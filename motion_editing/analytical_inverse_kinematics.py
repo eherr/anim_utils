@@ -29,9 +29,12 @@ Proceedings of the 26th annual conference on Computer graphics and interactive t
 """
 import math
 import numpy as np
-from transformations import quaternion_multiply, quaternion_about_axis, quaternion_matrix, quaternion_from_matrix, quaternion_inverse
-from .utils import normalize, to_local_cos, project_vec3
 import scipy.integrate as integrate
+from transformations import quaternion_multiply, quaternion_about_axis, quaternion_matrix, quaternion_from_matrix, quaternion_inverse
+
+
+def normalize(v):
+    return v/np.linalg.norm(v)
 
 
 def quaternion_from_axis_angle(axis, angle):

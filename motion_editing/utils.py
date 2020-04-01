@@ -26,8 +26,9 @@ from matplotlib import pyplot as plt
 import json
 from transformations import quaternion_multiply, quaternion_inverse, quaternion_matrix, quaternion_from_matrix, euler_from_quaternion
 from scipy.interpolate import UnivariateSpline
-from ..animation_data.constants import DEFAULT_ROTATION_ORDER
-from ..animation_data.skeleton_node import SkeletonEndSiteNode
+#from anim_utils.animation_data.constants import DEFAULT_ROTATION_ORDER
+
+DEFAULT_ROTATION_ORDER = ['Xrotation','Yrotation','Zrotation']
 
 def normalize(v):
     return v/np.linalg.norm(v)
@@ -251,20 +252,6 @@ def get_vertical_acceleration(skeleton, frames, joint_name):
     return ps, velocity(x), acceleration(x)
 
 
-def get_joint_height(skeleton, frames, joints):
-    joint_heights = dict()
-    for joint in joints:
-        joint_heights[joint] = get_vertical_acceleration(skeleton, frames, joint)
-        # print ys
-        # close_to_ground = np.where(y - o - self.ground_height < self.tolerance)
-
-        # zero_crossings = np.where(np.diff(np.sign(ya)))[0]
-        # zero_crossings = np.diff(np.sign(ya)) != 0
-        # print len(zero_crossings)
-        # joint_ground_contacts = np.where(close_to_ground and zero_crossings)
-        # print close_to_ground
-    return joint_heights
-
 def quaternion_to_axis_angle(q):
     """http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToAngle/
 
@@ -339,18 +326,6 @@ def plot_angular_velocities(angular_velocities, frame_range=(None,None)):
     plt.legend()
     plt.show(True)
 
-
-def add_heels_to_skeleton(skeleton, left_foot, right_foot, left_heel, right_heel, offset=[0, -5, 0]):
-    left_heel_node = SkeletonEndSiteNode(left_heel, [], skeleton.nodes[left_foot])
-    left_heel_node.offset = np.array(offset)
-    skeleton.nodes[left_heel] = left_heel_node
-    skeleton.nodes[left_foot].children.append(left_heel_node)
-
-    right_heel_node = SkeletonEndSiteNode(right_heel, [], skeleton.nodes[right_foot])
-    right_heel_node.offset = np.array(offset)
-    skeleton.nodes[right_heel] = right_heel_node
-    skeleton.nodes[right_foot].children.append(right_heel_node)
-    return skeleton
 
 def export_constraints(constraints, file_path):
     unique_dict = dict()
@@ -536,17 +511,6 @@ def smooth_root_positions(positions, window):
         smoothed_positions.append(avg_p)
     return smoothed_positions
 
-
-def guess_ground_height(skeleton, frames, start_frame, n_frames, foot_joints):
-    minimum_height = np.inf
-    joint_heights = get_joint_height(skeleton, frames[start_frame:start_frame+n_frames], foot_joints)
-    for joint in list(joint_heights.keys()):
-        p, v, a = joint_heights[joint]
-        pT = np.array(p).T
-        new_min_height = min(pT[1])
-        if new_min_height < minimum_height:
-            minimum_height = new_min_height
-    return minimum_height
 
 
 def move_to_ground(skeleton, frames, ground_height, foot_joints, start_frame=0, n_frames=5):

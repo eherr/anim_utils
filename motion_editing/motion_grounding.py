@@ -27,12 +27,27 @@ from transformations import quaternion_from_matrix, quaternion_matrix, quaternio
 from .analytical_inverse_kinematics import AnalyticalLimbIK
 from .numerical_ik_exp import NumericalInverseKinematicsExp
 from .utils import normalize, project_on_intersection_circle, smooth_root_positions
+from ..animation_data.skeleton_node import SkeletonEndSiteNode
 from ..animation_data.utils import quaternion_from_vector_to_vector
 from ..animation_data.motion_blending import create_transition_for_joints_using_slerp, BLEND_DIRECTION_FORWARD, BLEND_DIRECTION_BACKWARD, smooth_translation_in_quat_frames
 from ..animation_data.skeleton_models import IK_CHAINS_DEFAULT_SKELETON
 
 FOOT_STATE_GROUNDED = 0
 FOOT_STATE_SWINGING = 1
+
+def add_heels_to_skeleton(skeleton, left_foot, right_foot, left_heel, right_heel, offset=[0, -5, 0]):
+    
+    left_heel_node = SkeletonEndSiteNode(left_heel, [], skeleton.nodes[left_foot])
+    left_heel_node.offset = np.array(offset)
+    skeleton.nodes[left_heel] = left_heel_node
+    skeleton.nodes[left_foot].children.append(left_heel_node)
+
+    right_heel_node = SkeletonEndSiteNode(right_heel, [], skeleton.nodes[right_foot])
+    right_heel_node.offset = np.array(offset)
+    skeleton.nodes[right_heel] = right_heel_node
+    skeleton.nodes[right_foot].children.append(right_heel_node)
+    return skeleton
+
 
 def create_grounding_constraint_from_frame(skeleton, frames, frame_idx, joint_name):
     position = skeleton.nodes[joint_name].get_global_position(frames[frame_idx])

@@ -25,8 +25,36 @@ import numpy as np
 from transformations import quaternion_from_matrix, quaternion_multiply, quaternion_matrix, quaternion_slerp, quaternion_inverse
 from ..animation_data.skeleton_models import *
 from .motion_grounding import MotionGroundingConstraint, FOOT_STATE_SWINGING
-from .utils import get_average_joint_position, get_average_joint_direction, get_joint_height, normalize, get_average_direction_from_target
+from .utils import get_average_joint_position, get_average_joint_direction, normalize, get_average_direction_from_target, get_vertical_acceleration
 from ..animation_data.utils import quaternion_from_vector_to_vector
+
+
+def get_joint_height(skeleton, frames, joints):
+    joint_heights = dict()
+    for joint in joints:
+        joint_heights[joint] = get_vertical_acceleration(skeleton, frames, joint)
+        # print ys
+        # close_to_ground = np.where(y - o - self.ground_height < self.tolerance)
+
+        # zero_crossings = np.where(np.diff(np.sign(ya)))[0]
+        # zero_crossings = np.diff(np.sign(ya)) != 0
+        # print len(zero_crossings)
+        # joint_ground_contacts = np.where(close_to_ground and zero_crossings)
+        # print close_to_ground
+    return joint_heights
+
+
+def guess_ground_height(skeleton, frames, start_frame, n_frames, foot_joints):
+    minimum_height = np.inf
+    joint_heights = get_joint_height(skeleton, frames[start_frame:start_frame+n_frames], foot_joints)
+    for joint in list(joint_heights.keys()):
+        p, v, a = joint_heights[joint]
+        pT = np.array(p).T
+        new_min_height = min(pT[1])
+        if new_min_height < minimum_height:
+            minimum_height = new_min_height
+    return minimum_height
+
 
 
 def get_quat_delta(qa, qb):
