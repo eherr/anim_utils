@@ -651,9 +651,10 @@ class MotionEditing(object):
                 Lee and Shin: A Hierarchical Approach to Interactive Motion Editing for Human-like Figures, 1999.
         """
         d_times, delta_frames, joint_list = self.generate_delta_frames_using_ccd(frames, constraints, n_max_iter, root_joint, influence_range)
-        joint_name = self.skeleton.skeleton_model["joints"]["neck"]
-        if joint_name is not None:
-            joint_list.append(joint_name)
+        if self.skeleton.skeleton_model is not None and "joints" in self.skeleton.skeleton_model and "neck" in self.skeleton.skeleton_model["joints"]:
+            joint_name = self.skeleton.skeleton_model["joints"]["neck"]
+            if joint_name is not None:
+                joint_list.append(joint_name)
         return self.add_reduced_delta_curve(frames, d_times, delta_frames, joint_list, plot=plot)
 
     def apply_orientation_constraints(self, frames, constraints):
