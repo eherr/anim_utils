@@ -174,13 +174,16 @@ def add_fixed_dofs_to_frame(skeleton, frame):
             full_frame += node.rotation.tolist()
     return full_frame
 
-def extract_ik_chains(skeleton_model):
+def extract_ik_chains(joints_map):
     new_ik_chains = dict()
     for j in IK_CHAINS_DEFAULT_SKELETON:
-        mapped_j = skeleton_model["joints"][j]
-        new_ik_chains[mapped_j] = copy(IK_CHAINS_DEFAULT_SKELETON[j])
-        new_ik_chains[mapped_j]["root"] = skeleton_model["joints"][IK_CHAINS_DEFAULT_SKELETON[j]["root"]]
-        new_ik_chains[mapped_j]["joint"] = skeleton_model["joints"][IK_CHAINS_DEFAULT_SKELETON[j]["joint"]]
+        mapped_j = joints_map[j]
+        root_joint = IK_CHAINS_DEFAULT_SKELETON[j]["root"]
+        free_joint = IK_CHAINS_DEFAULT_SKELETON[j]["joint"]
+        if root_joint in joints_map and free_joint in joints_map:
+            new_ik_chains[mapped_j] = copy(IK_CHAINS_DEFAULT_SKELETON[j])
+            new_ik_chains[mapped_j]["root"] = joints_map[root_joint]
+            new_ik_chains[mapped_j]["joint"] = joints_map[free_joint]
     return new_ik_chains
 
 class MotionGrounding(object):
@@ -193,13 +196,16 @@ class MotionGrounding(object):
         self.translation_blend_window = 40
         self._blend_ranges = collections.OrderedDict()
         self.use_analytical_ik = use_analytical_ik
-        if "joints" in skeleton_model:
-            self._ik_chains = extract_ik_chains(skeleton_model)
-        else:
-            self._ik_chains = dict()
         self.skeleton_model = skeleton_model
         self.damp_angle = damp_angle
         self.damp_factor = damp_factor
+        if "joints" in skeleton_model:
+            joints_map = skeleton_model["joints"]
+            self._ik_chains = extract_ik_chains(joints_map)
+            self.initialized = True
+        else:
+            self._ik_chains = dict()
+            self.initialized = False
 
     def set_constraints(self, constraints):
         self._constraints = constraints
