@@ -193,7 +193,10 @@ class MotionGrounding(object):
         self.translation_blend_window = 40
         self._blend_ranges = collections.OrderedDict()
         self.use_analytical_ik = use_analytical_ik
-        self._ik_chains = extract_ik_chains(skeleton_model)
+        if "joints" in skeleton_model:
+            self._ik_chains = extract_ik_chains(skeleton_model)
+        else:
+            self._ik_chains = dict()
         self.skeleton_model = skeleton_model
         self.damp_angle = damp_angle
         self.damp_factor = damp_factor
@@ -334,54 +337,6 @@ class MotionGrounding(object):
         p_c -= self.skeleton.nodes[root].offset
         return p_c
 
-
-    def generate_root_constraint_for_two_feet2(self, current_root_pos, constraint1, constraint2, limb_length_offset=0.0):
-        """ Set the root position to the projection on the intersection of two spheres """
-        root = self.skeleton.skeleton_model["joints"]["pelvis"]
-        # print("root position", root, p)
-        t1 = np.linalg.norm(constraint1.position - current_root_pos)
-        t2 = np.linalg.norm(constraint2.position - current_root_pos)
-
-        c1 = constraint1.position
-        r1 = self.get_limb_length(constraint1.joint_name) + limb_length_offset
-        # p1 = c1 + r1 * normalize(p-c1)
-        c2 = constraint2.position
-        r2 = self.get_limb_length(constraint2.joint_name) + limb_length_offset
-        # (r1, r2, t1,t2)
-        # p2 = c2 + r2 * normalize(p-c2)
-        if t1 < r1 and t2 < r2:
-            return None
-        # print("adapt root for two constraints", constraint1.position, r1, constraint2.position, r2)
-        p_c = project_on_intersection_circle(current_root_pos, c1, r1, c2, r2)
-        # if self.skeleton.root != root:
-        # p_c -= [0, self.skeleton.nodes[root].offset[0], -self.skeleton.nodes[root].offset[1]]
-        p_c -= self.skeleton.nodes[root].offset
-        return p_c
-
-    def generate_root_constraint_for_two_feet3(self, current_root_pos, constraint1, constraint2,
-                                               limb_length_offset=0.0):
-        """ Set the root position to the projection on the intersection of two spheres """
-        root = self.skeleton.skeleton_model["joints"]["pelvis"]
-        # print("root position", root, p)
-        t1 = np.linalg.norm(constraint1.position - current_root_pos)
-        t2 = np.linalg.norm(constraint2.position - current_root_pos)
-
-        c1 = constraint1.position
-        r1 = self.get_limb_length(constraint1.joint_name) + limb_length_offset
-        # p1 = c1 + r1 * normalize(p-c1)
-        c2 = constraint2.position
-        r2 = self.get_limb_length(constraint2.joint_name) + limb_length_offset
-        # (r1, r2, t1,t2)
-        # p2 = c2 + r2 * normalize(p-c2)
-        if t1 < r1 and t2 < r2:
-            return None
-        # print("adapt root for two constraints", constraint1.position, r1, constraint2.position, r2)
-        p_c = project_on_intersection_circle(current_root_pos, c1, r1, c2, r2)
-        # if self.skeleton.root != root:
-        # p_c -= [0, self.skeleton.nodes[root].offset[0], -self.skeleton.nodes[root].offset[1]]
-        #p_c -= self.skeleton.nodes[root].offset
-        return p_c
-
     def get_limb_length(self, joint_name):
         limb_length = np.linalg.norm(self.skeleton.nodes[joint_name].offset)
         limb_length += np.linalg.norm(self.skeleton.nodes[joint_name].parent.offset)
@@ -389,17 +344,17 @@ class MotionGrounding(object):
 
     def apply_analytical_ik(self, frames):
         n_frames = len(frames)
-        for frame_idx, constraints in list(self._constraints.items()):
+        for frame_idx, constraints in self._constraints.items():
             if 0 <= frame_idx < n_frames:
                 print("process frame", frame_idx, len(constraints))
                 self.apply_analytical_ik_on_frame(frames[frame_idx], constraints)
 
     def apply_analytical_ik_on_frame(self, frame, constraints):
         for c in constraints:
-            if c.joint_name in list(self._ik_chains.keys()):
+            if c.joint_name in self._ik_chains:
                 data = self._ik_chains[c.joint_name]
                 ik = AnalyticalLimbIK.init_from_dict(self.skeleton, c.joint_name, data, damp_angle=self.damp_angle, damp_factor=self.damp_factor)
-                frame = ik.apply2(frame, c.position, c.orientation)
+                frame = ik.apply(frame, c.position, c.orientation)
             else:
                 print("could not find ik chain definition for ", c.joint_name)
                 frame = self._ik.modify_frame(frame, constraints)
@@ -413,7 +368,7 @@ class MotionGrounding(object):
         return frame
 
     def blend_at_transitions(self, frames):
-        for frame_range, joint_names in list(self._blend_ranges.items()):
+        for frame_range, joint_names in self._blend_ranges.items():
             start = frame_range[0]
             end = frame_range[1]
             self._blend_around_frame_range(frames, start, end, joint_names)
