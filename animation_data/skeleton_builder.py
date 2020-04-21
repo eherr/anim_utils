@@ -26,10 +26,13 @@ import json
 import numpy as np
 from .skeleton import Skeleton
 from .skeleton_node import SkeletonRootNode, SkeletonJointNode, SkeletonEndSiteNode, SKELETON_NODE_TYPE_JOINT, SKELETON_NODE_TYPE_END_SITE
-from .skeleton_models import ROCKETBOX_ANIMATED_JOINT_LIST, ROCKETBOX_FREE_JOINTS_MAP, ROCKETBOX_SKELETON_MODEL, ROCKETBOX_BOUNDS, ROCKETBOX_TOOL_BONES, ROCKETBOX_ROOT_DIR
 from .quaternion_frame import convert_euler_to_quaternion_frame
 from .joint_constraints import HingeConstraint2
 from .acclaim import asf_to_bvh_channels
+
+
+DEFAULT_ROOT_DIR = [0, 0, 1]
+
 
 def create_identity_frame(skeleton):
     skeleton.identity_frame = np.zeros(skeleton.reference_frame_length)
@@ -121,7 +124,7 @@ class SkeletonBuilder(object):
         skeleton.frame_time = deepcopy(bvh_reader.frame_time)
         skeleton.root = deepcopy(bvh_reader.root)
         skeleton.aligning_root_node = skeleton.root
-        skeleton.aligning_root_dir = ROCKETBOX_ROOT_DIR
+        skeleton.aligning_root_dir = DEFAULT_ROOT_DIR
         if reference_frame is None:
             skeleton.reference_frame = read_reference_frame_from_bvh_reader(bvh_reader)
         else:
@@ -227,7 +230,7 @@ class SkeletonBuilder(object):
             skeleton.aligning_root_node = data["root"]
         else:
             skeleton.aligning_root_node = skeleton.root
-        skeleton.aligning_root_dir = ROCKETBOX_ROOT_DIR
+        skeleton.aligning_root_dir = DEFAULT_ROOT_DIR
 
         skeleton.reference_frame = reference_frame_from_unity(data["referencePose"])
         print("reference", skeleton.reference_frame[3:7],data["referencePose"]["rotations"][0])
@@ -283,7 +286,7 @@ class SkeletonBuilder(object):
         if "aligning_root_dir" in list(data.keys()):
             skeleton.aligning_root_dir = data["aligning_root_dir"]
         else:
-            skeleton.aligning_root_dir = ROCKETBOX_ROOT_DIR
+            skeleton.aligning_root_dir = DEFAULT_ROOT_DIR
         #skeleton.reference_frame = data["reference_frame"]
         skeleton.reference_frame = None
         if "reference_frame" in data:

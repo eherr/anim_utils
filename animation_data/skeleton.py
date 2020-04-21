@@ -33,7 +33,6 @@ import numpy as np
 from transformations import quaternion_matrix
 from .skeleton_node import SkeletonEndSiteNode
 from .constants import ROTATION_TYPE_QUATERNION, ROTATION_TYPE_EULER, LEN_EULER, LEN_ROOT_POS, LEN_QUAT
-from .skeleton_models import ROCKETBOX_ANIMATED_JOINT_LIST, ROCKETBOX_FREE_JOINTS_MAP, ROCKETBOX_SKELETON_MODEL, ROCKETBOX_BOUNDS, ROCKETBOX_TOOL_BONES, ROCKETBOX_ROOT_DIR
 from ..motion_editing.coordinate_cyclic_descent import run_ccd, normalize, set_global_orientation, run_ccd_look_at, orient_node_to_target_look_at, LOOK_AT_DIR, SPINE_LOOK_AT_DIR, orient_node_to_target_look_at_projected
 
 
@@ -47,7 +46,7 @@ class Skeleton(object):
     """
     def __init__(self):
         self.animated_joints = []
-        self.free_joints_map = ROCKETBOX_FREE_JOINTS_MAP
+        self.free_joints_map = dict()
         self.skeleton_model = None
         self.frame_time = None
         self.root = None
