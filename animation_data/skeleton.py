@@ -36,10 +36,6 @@ from .constants import ROTATION_TYPE_QUATERNION, ROTATION_TYPE_EULER, LEN_EULER,
 from ..motion_editing.coordinate_cyclic_descent import run_ccd, normalize, set_global_orientation, run_ccd_look_at, orient_node_to_target_look_at, LOOK_AT_DIR, SPINE_LOOK_AT_DIR, orient_node_to_target_look_at_projected
 
 
-def project_vector_on_vector(a, b):
-    return np.dot(np.dot(b, a), b)
-
-
 class Skeleton(object):
     """ Data structure that stores the skeleton hierarchy information
         extracted from a BVH file with additional meta information.
@@ -374,46 +370,6 @@ class Skeleton(object):
         for joint_name in self.animated_joints:
             self.nodes[joint_name].rotation = frame[o:o+4]
             o += 4
-
-    def add_heels(self, skeleton_model):
-        lknee_name = skeleton_model["joints"]["left_knee"]
-        rknee_name = skeleton_model["joints"]["right_knee"]
-
-        lfoot_name = skeleton_model["joints"]["left_ankle"]
-        rfoot_name = skeleton_model["joints"]["right_ankle"]
-
-        ltoe_name = skeleton_model["joints"]["left_toe"]
-        rtoe_name = skeleton_model["joints"]["right_toe"]
-
-        frame = self.get_reduced_reference_frame()
-        self.add_heel("left_heel", lknee_name, lfoot_name, ltoe_name, frame)
-        self.add_heel("right_heel", rknee_name, rfoot_name, rtoe_name, frame)
-
-    def add_heel(self, heel_name, knee_name, foot_name, toe_name, frame):
-        lknee_position = self.nodes[knee_name].get_global_position(frame)
-        lfoot_position = self.nodes[foot_name].get_global_position(frame)
-        ltoe_position = self.nodes[toe_name].get_global_position(frame)
-
-        #project toe offset vector onto negative foot offset vector
-        leg_delta = lfoot_position - lknee_position
-        leg_delta /= np.linalg.norm(leg_delta)
-        delta = ltoe_position - lfoot_position
-        #heel_offset = project_vector_on_vector(delta, leg_delta)
-        #print("h1",heel_offset)
-        heel_offset = project_vector_on_vector(delta, [0,1,0])*1.2
-        #print("h2",heel_offset)
-
-        # bring into local coordinate system
-        m = self.nodes[foot_name].get_global_matrix(frame)[:3, :3]
-        heel_offset = np.dot(np.linalg.inv(m), heel_offset)
-        node = SkeletonEndSiteNode(heel_name, [], self.nodes[foot_name],
-                                                      self.nodes[foot_name].level + 1)
-        node.fixed = True
-        node.index = -1
-        node.offset = np.array(heel_offset)
-        node.rotation = np.array([1, 0, 0, 0])
-        self.nodes[heel_name] = node
-        self.nodes[foot_name].children.append(node)
 
     def apply_joint_constraints(self, frame):
         for n in self.animated_joints:
