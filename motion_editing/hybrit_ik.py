@@ -51,7 +51,7 @@ def ik_objective(x, skeleton, reference, constraints, weights, analytical_ik):
     #print q_frame.shape
     for c in constraints:
         if c.joint_name in analytical_ik:
-            q_frame = analytical_ik[c.joint_name].apply2(q_frame, c.position, c.orientation)
+            q_frame = analytical_ik[c.joint_name].apply(q_frame, c.position, c.orientation)
         error += c.evaluate(skeleton, q_frame)
     return error
 
@@ -102,5 +102,5 @@ class HybritIK(object):
         q_frame = add_quat_frames(self.skeleton, reference, d)
         for c in constraints:
             if c.joint_name in self.analytical_ik:
-                q_frame = self.analytical_ik[c.joint_name].apply2(q_frame, c.position, c.orientation)
+                q_frame = self.analytical_ik[c.joint_name].apply(q_frame, c.position, c.orientation)
         return q_frame

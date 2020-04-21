@@ -266,21 +266,7 @@ class AnalyticalLimbIK(object):
         return normalize(pos2 - pos1)
 
 
-    def apply(self, frame, position=None, direction=None):
-
-        if position is not None:
-            # 1 calculate joint angle based on the distance to target position
-            self.calculate_limb_joint_rotation(frame, position)
-
-            # 2 calculate limb root rotation to align the end effector with the target position
-            self.calculate_limb_root_rotation(frame, position)
-
-        # 3 orient end effector
-        if direction is not None:
-            self.calculate_end_effector_rotation(frame, direction)
-        return frame
-
-    def apply2(self, frame, position, orientation):
+    def apply(self, frame, position, orientation):
         if position is not None:
             # 1 calculate joint angle based on the distance to target position
             self.calculate_limb_joint_rotation(frame, position)

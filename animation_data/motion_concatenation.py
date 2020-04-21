@@ -455,7 +455,7 @@ def align_joint(skeleton, frames, frame_idx, foot_joint, ik_chain, ik_window=7):
     transition_end = frame_idx + ik_window
     c = create_grounding_constraint_from_frame(skeleton, frames, frame_idx, foot_joint)
     ik = AnalyticalLimbIK.init_from_dict(skeleton, c.joint_name, ik_chain)
-    frames[transition_start] = ik.apply2(frames[transition_start], c.position, c.orientation)
+    frames[transition_start] = ik.apply(frames[transition_start], c.position, c.orientation)
 
     chain_joints = [ik_chain["root"], ik_chain["joint"], foot_joint]
     for c_joint in chain_joints:
@@ -485,7 +485,7 @@ def align_frames_and_fix_foot_to_prev(skeleton, aligning_joint, new_frames, prev
         ik = AnalyticalLimbIK.init_from_dict(skeleton, c.joint_name, ik_chain)
         before = skeleton.nodes[foot_joint].get_global_position(frames[transition_start])
 
-        frames[transition_start] = ik.apply2(frames[transition_start], c.position, c.orientation)
+        frames[transition_start] = ik.apply(frames[transition_start], c.position, c.orientation)
 
         transition_end = d+ik_window
         print("allign frames", c.position, foot_joint, d-1, transition_end, before, skeleton.nodes[foot_joint].get_global_position(frames[transition_start]))
@@ -546,7 +546,7 @@ def translate_root(skeleton, frames, target_frame_idx, plant_heel, ground_height
 def apply_constraint(skeleton, frames, c, ik_chain, frame_idx, start, end, window):
     print("apply swing foot constraint on frame", frame_idx, start, end)
     ik = AnalyticalLimbIK.init_from_dict(skeleton, c.joint_name, ik_chain)
-    frames[frame_idx] = ik.apply2(frames[frame_idx], c.position, c.orientation)
+    frames[frame_idx] = ik.apply(frames[frame_idx], c.position, c.orientation)
     joint_list = [ik_chain["root"], ik_chain["joint"], c.joint_name]
     blend_between_frames(skeleton, frames, start, end, joint_list, window)
 
@@ -556,7 +556,7 @@ def apply_constraint_on_window_prev(skeleton, frames, c, ik_chain, start, end, w
     indices = list(range(start, end + 1))
     print("apply on frames", indices)
     for f in indices:
-        frames[f] = ik.apply2(frames[f], c.position, c.orientation)
+        frames[f] = ik.apply(frames[f], c.position, c.orientation)
     joint_list = [ik_chain["root"], ik_chain["joint"], c.joint_name]
     blend_between_frames(skeleton, frames, end, end+window, joint_list, window)
 
@@ -566,7 +566,7 @@ def apply_constraint_on_window_next(skeleton, frames, c, ik_chain, start, end, w
     indices = list(range(start, end + 1))
     print("apply on frames", indices)
     for f in indices:
-        frames[f] = ik.apply2(frames[f], c.position, c.orientation)
+        frames[f] = ik.apply(frames[f], c.position, c.orientation)
     joint_list = [ik_chain["root"], ik_chain["joint"], c.joint_name]
     print("blend between frames",start-window, start)
     blend_between_frames(skeleton, frames, start-window, start, joint_list, window)
