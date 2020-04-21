@@ -47,7 +47,7 @@ def get_joint_height(skeleton, frames, joints):
 def guess_ground_height(skeleton, frames, start_frame, n_frames, foot_joints):
     minimum_height = np.inf
     joint_heights = get_joint_height(skeleton, frames[start_frame:start_frame+n_frames], foot_joints)
-    for joint in list(joint_heights.keys()):
+    for joint in joint_heights:
         p, v, a = joint_heights[joint]
         pT = np.array(p).T
         new_min_height = min(pT[1])
