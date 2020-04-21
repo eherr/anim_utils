@@ -25,22 +25,40 @@ import numpy as np
 from transformations import quaternion_from_matrix, quaternion_multiply, quaternion_matrix, quaternion_slerp, quaternion_inverse
 from ..animation_data.skeleton_models import *
 from .motion_grounding import MotionGroundingConstraint, FOOT_STATE_SWINGING
-from .utils import get_average_joint_position, get_average_joint_direction, normalize, get_average_direction_from_target, get_vertical_acceleration
+from .utils import get_average_joint_position, get_average_joint_direction, normalize, get_average_direction_from_target
 from ..animation_data.utils import quaternion_from_vector_to_vector
+
+def get_vertical_velocity_and_acceleration(positions):
+    """ https://stackoverflow.com/questions/40226357/second-derivative-in-python-scipy-numpy-pandas
+    """
+    ps = np.array(ps)
+    x = np.linspace(0, len(positions), len(positions))
+    ys = np.array(ps[:, 1])
+    y_spl = UnivariateSpline(x, ys, s=0, k=4)
+    velocity = y_spl.derivative(n=1)
+    acceleration = y_spl.derivative(n=2)
+    return velocity(x), acceleration(x)
+
+def get_joint_vertical_velocity_and_acceleration(skeleton, frames, joints):
+    joint_heights = dict()
+    for joint in joints:
+        ps = []
+        for frame in frames:
+            p = skeleton.nodes[joint_name].get_global_position(frame)
+            ps.append(p)
+        v, a = get_vertical_velocity_and_acceleration(positions)
+        joint_heights[joint] = ps, v, a
+    return joint_heights
 
 
 def get_joint_height(skeleton, frames, joints):
     joint_heights = dict()
     for joint in joints:
-        joint_heights[joint] = get_vertical_acceleration(skeleton, frames, joint)
-        # print ys
-        # close_to_ground = np.where(y - o - self.ground_height < self.tolerance)
-
-        # zero_crossings = np.where(np.diff(np.sign(ya)))[0]
-        # zero_crossings = np.diff(np.sign(ya)) != 0
-        # print len(zero_crossings)
-        # joint_ground_contacts = np.where(close_to_ground and zero_crossings)
-        # print close_to_ground
+        ps = []
+        for frame in frames:
+            p = skeleton.nodes[joint_name].get_global_position(frame)
+            ps.append(p)
+        joint_heights[joint] = positions
     return joint_heights
 
 
@@ -48,7 +66,7 @@ def guess_ground_height(skeleton, frames, start_frame, n_frames, foot_joints):
     minimum_height = np.inf
     joint_heights = get_joint_height(skeleton, frames[start_frame:start_frame+n_frames], foot_joints)
     for joint in joint_heights:
-        p, v, a = joint_heights[joint]
+        p = joint_heights[joint]
         pT = np.array(p).T
         new_min_height = min(pT[1])
         if new_min_height < minimum_height:
@@ -299,68 +317,52 @@ def create_ankle_constraint(skeleton, frames, ankle_joint_name, heel_joint_name,
 
 
 class FootplantConstraintGenerator(object):
-    def __init__(self, skeleton, skeleton_model, settings, scene_interface=None, source_ground_height=0):
+    def __init__(self, skeleton, contact_joints, settings, scene_interface=None):
         self.skeleton = skeleton
-        self.left_foot = skeleton_model["joints"]["left_ankle"]
-        self.right_foot = skeleton_model["joints"]["right_ankle"]
-        self.right_heel = skeleton_model["joints"]["right_heel"]
-        self.left_heel = skeleton_model["joints"]["left_heel"]
-        self.right_toe = skeleton_model["joints"]["right_toe"]
-        self.left_toe = skeleton_model["joints"]["left_toe"]
-        if "foot_joints" in skeleton_model:
-            self.foot_joints = skeleton_model["foot_joints"]
-        if "heel_offset" in skeleton_model:
-            self.heel_offset = skeleton_model["heel_offset"]
-        self.right_toe_offset = skeleton.nodes[self.right_toe].offset
-        self.left_toe_offset = skeleton.nodes[self.left_toe].offset
+        self.left_foot = skeleton.skeleton_model["joints"]["left_ankle"]
+        self.right_foot = skeleton.skeleton_model["joints"]["right_ankle"]
+        self.right_heel = skeleton.skeleton_model["joints"]["right_heel"]
+        self.left_heel = skeleton.skeleton_model["joints"]["left_heel"]
+        self.right_toe = skeleton.skeleton_model["joints"]["right_toe"]
+        self.left_toe = skeleton.skeleton_model["joints"]["left_toe"]
+        self.contact_joints = [self.right_heel, self.left_heel, self.right_toe, self.left_toe]
 
         self.foot_definitions = {"right": {"heel": self.right_heel, "toe": self.right_toe, "ankle": self.right_foot},
                                  "left": {"heel": self.left_heel, "toe": self.left_toe, "ankle": self.left_foot}}
-        self.graph_walk_grounding_window = settings["graph_walk_grounding_window"]
-        self.foot_lift_search_window = settings["foot_lift_search_window"]
-        self.source_ground_height = source_ground_height
+       
         if scene_interface is None:
-            self.scene_interface = SceneInterface(source_ground_height)
+            self.scene_interface = SceneInterface(0)
         else:
             self.scene_interface = scene_interface
 
         self.contact_tolerance = settings["contact_tolerance"]
         self.foot_lift_tolerance = settings["foot_lift_tolerance"]
         self.constraint_generation_range = settings["constraint_range"]
+        self.smoothing_constraints_window = settings["smoothing_constraints_window"]
+        self.foot_lift_search_window = settings["foot_lift_search_window"]
 
-        self.joint_offset = dict()
-        for j in self.foot_joints:
-            self.joint_offset[j] = 0
         self.position_constraint_buffer = dict()
         self.orientation_constraint_buffer = dict()
         self.velocity_tolerance = 0
-        self.smoothing_constraints_window = settings["smoothing_constraints_window"]
 
-    def detect_ground_contacts(self, frames, joints):
+    def detect_ground_contacts(self, frames, joints, ground_height=0):
         """https://stackoverflow.com/questions/3843017/efficiently-detect-sign-changes-in-python
         """
-
-        joint_heights = get_joint_height(self.skeleton, frames, joints)
-        #angular_velocities = get_angular_velocities(self.skeleton, frames,["RightUpLeg","LeftUpLeg"])
+        joint_y_vel_acc = get_joint_vertical_velocity_and_acceleration(self.skeleton, frames, joints)
         ground_contacts = []
         for f in frames:
             ground_contacts.append([])
-        for side in self.foot_definitions:
-            foot_joints = [self.foot_definitions[side]["heel"], self.foot_definitions[side]["toe"]]
-            for joint in foot_joints:
-                ps, yv, ya = joint_heights[joint]
-                for frame_idx, p in enumerate(ps[:-1]):
-                    o = self.joint_offset[joint]
-                    velocity = np.sqrt(yv[frame_idx]*yv[frame_idx])
-                    if p[1] - o - self.source_ground_height < self.contact_tolerance:# or velocity < self.velocity_tolerance and zero_crossings[frame_idx]
-                        ground_contacts[frame_idx].append(joint)
+        for joint in joints:
+            ps, yv, ya = joint_heights[joint]
+            for frame_idx, p in enumerate(ps[:-1]):
+                velocity = np.sqrt(yv[frame_idx]*yv[frame_idx])
+                if p[1] - ground_height < self.contact_tolerance:# or velocity < self.velocity_tolerance and zero_crossings[frame_idx]
+                    ground_contacts[frame_idx].append(joint)
         return self.filter_outliers(ground_contacts, joints)
 
     def filter_outliers(self, ground_contacts, joints):
         n_frames = len(ground_contacts)
-        #print n_frames
         filtered_ground_contacts = [[] for idx in range(n_frames)]
-        #print len(filtered_ground_contacts)
         filtered_ground_contacts[0] = ground_contacts[0]
         filtered_ground_contacts[-1] = ground_contacts[-1]
         frames_indices = range(1,n_frames-1)
@@ -369,11 +371,9 @@ class FootplantConstraintGenerator(object):
             prev_frame = ground_contacts[frame_idx - 1]
             current_frame = ground_contacts[frame_idx]
             next_frame = ground_contacts[frame_idx + 1]
-            #print "check", frame_idx, joints, prev_frame, current_frame, next_frame
             for joint in joints:
                 if joint in current_frame:
                     if joint not in prev_frame and joint not in next_frame:
-                        #print "outlier", frame_idx, joint
                         continue
                     else:
                         filtered_ground_contacts[frame_idx].append(joint)
@@ -424,7 +424,7 @@ class FootplantConstraintGenerator(object):
 
         constraints = dict()
         if ground_contacts is None:
-            ground_contacts = self.detect_ground_contacts(motion_vector.frames, self.foot_joints)
+            ground_contacts = self.detect_ground_contacts(motion_vector.frames, self.contact_joints)
         # generate constraints
         for frame_idx, joint_names in enumerate(ground_contacts):
             constraints[frame_idx] = self.generate_grounding_constraint(motion_vector.frames, frame_idx, joint_names)
