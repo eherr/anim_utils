@@ -343,9 +343,9 @@ class MotionGrounding(object):
             backward_steps = transition_end - end
             if joint_name == self.skeleton.root:
                 if start > 0:
-                    frames[:,:3] = smooth_translation_in_quat_frames(frames, start, self.translation_blend_window)
+                    frames = smooth_translation_in_quat_frames(frames, start, self.translation_blend_window)
                 temp_frame = min(end + 1, frames.shape[0]-1)
-                frames[:,:3] = smooth_translation_in_quat_frames(frames, temp_frame, self.translation_blend_window)
+                frames = smooth_translation_in_quat_frames(frames, temp_frame, self.translation_blend_window)
 
             idx = self._ik.skeleton.animated_joints.index(joint_name)*4+3
             joint_parameter_indices = [idx, idx+1, idx+2, idx+3]
