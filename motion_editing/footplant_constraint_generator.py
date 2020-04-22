@@ -32,9 +32,8 @@ from ..animation_data.utils import quaternion_from_vector_to_vector
 def get_velocity_and_acceleration(scalars):
     """ https://stackoverflow.com/questions/40226357/second-derivative-in-python-scipy-numpy-pandas
     """
-    ps = np.array(scalars)
     x = np.linspace(0, len(scalars), len(scalars))
-    ys = np.array(ps[:-1])
+    ys = np.array(scalars, dtype=np.float32)
     y_spl = UnivariateSpline(x, ys, s=0, k=4)
     velocity = y_spl.derivative(n=1)
     acceleration = y_spl.derivative(n=2)
@@ -48,7 +47,7 @@ def get_joint_vertical_velocity_and_acceleration(skeleton, frames, joints):
             p = skeleton.nodes[joint].get_global_position(frame)
             ps.append(p[1])
         if len(ps)> 1:
-            v, a = get_vertical_velocity_and_acceleration(ps)
+            v, a = get_velocity_and_acceleration(ps)
             joint_heights[joint] = ps[:-1], v, a
         elif len(ps) == 1:
             joint_heights[joint] = [ps[0]], [0], [0]
