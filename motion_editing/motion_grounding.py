@@ -49,6 +49,77 @@ def add_heels_to_skeleton(skeleton, left_foot, right_foot, left_heel, right_heel
     return skeleton
 
 
+
+def get_heel_offset(skeleton, foot_name, toe_name, frame):
+    """ calculate heel offset from foot assuming the "y" axis of the foot coordinate system is aligned to the ground  
+    """
+    m = skeleton.nodes[foot_name].get_global_matrix(frame)
+    foot_position = m[:3,3]
+    print("foot_position", foot_position)
+    toe_offset = skeleton.nodes[toe_name].offset
+    #if len(skeleton.nodes[toe_name].children) > 0:
+    #   toe_offset += skeleton.nodes[toe_name].children[0].offset
+    up_vector = np.array(skeleton.skeleton_model["cos_map"][foot_name]["y"])
+    up_vector /= np.linalg.norm(up_vector)
+    #project toe offset on up vector that should be aligned with the ground
+    scale = np.dot(up_vector, toe_offset)
+
+    # get global position of toe aligned to ground
+    local_offset = scale*up_vector
+    local_offset = [local_offset[0],local_offset[1],local_offset[2], 1]
+    projected_toe_pos = np.dot(m, local_offset)[:3]
+    print("projected_toe_pos", projected_toe_pos)
+    # use offset from projected toe position to position to get the global heel position
+    toe_pos = skeleton.nodes[toe_name].get_global_position(frame)
+    heel_position = foot_position + (toe_pos - projected_toe_pos) 
+
+    # bring into local coordinate system
+    heel_position = [heel_position[0],heel_position[1],heel_position[2], 1]
+    heel_offset = np.dot(np.linalg.inv(m), heel_position)[:3]
+    print("heel_offset", heel_offset)
+    print("toe_offset", toe_offset)
+    return heel_offset
+
+
+
+def get_heel_offset2(skeleton, foot_name, toe_name, frame):
+    """ calculate heel offset from foot assuming the "y" axis of the foot coordinate system is aligned to the ground  
+    """
+    m = skeleton.nodes[foot_name].get_global_matrix(frame)
+    foot_position = m[:3,3]
+    print("foot_position", foot_position)
+    toe_offset = skeleton.nodes[toe_name].offset
+    #if len(skeleton.nodes[toe_name].children) > 0:
+    #   toe_offset += skeleton.nodes[toe_name].children[0].offset
+    up_vector = np.array(skeleton.skeleton_model["cos_map"][foot_name]["y"])
+    up_vector /= np.linalg.norm(up_vector)
+    x_vector = np.array(skeleton.skeleton_model["cos_map"][foot_name]["x"])
+    x_vector /= np.linalg.norm(x_vector)
+    z_vector = np.cross(up_vector, x_vector)
+    z_vector /= np.linalg.norm(z_vector)
+    #project toe offset on up vector that should be aligned with the ground
+    scale = np.dot(z_vector, toe_offset)
+    heel_offset = scale*z_vector 
+    # bring into local coordinate system
+    print("heel_offse2", heel_offset)
+    print("toe_offset", toe_offset)
+    return heel_offset
+
+def add_temporary_heels_to_skeleton(skeleton, left_foot, right_foot, left_toe, right_toe, left_heel, right_heel):
+    
+    left_heel_node = SkeletonEndSiteNode(left_heel, [], skeleton.nodes[left_foot])
+    left_heel_node.offset = get_heel_offset2(skeleton, left_foot, left_toe, skeleton.reference_frame)
+    skeleton.nodes[left_heel] = left_heel_node
+    skeleton.nodes[left_foot].children.append(left_heel_node)
+    skeleton.skeleton_model["joints"]["left_heel"] = left_heel
+
+    right_heel_node = SkeletonEndSiteNode(right_heel, [], skeleton.nodes[right_foot])
+    right_heel_node.offset = get_heel_offset2(skeleton, right_foot, right_toe, skeleton.reference_frame)
+    skeleton.nodes[right_heel] = right_heel_node
+    skeleton.nodes[right_foot].children.append(right_heel_node)
+    skeleton.skeleton_model["joints"]["right_heel"] = right_heel
+    return skeleton
+
 def create_grounding_constraint_from_frame(skeleton, frames, frame_idx, joint_name):
     position = skeleton.nodes[joint_name].get_global_position(frames[frame_idx])
     m = skeleton.nodes[joint_name].get_global_matrix(frames[frame_idx])
@@ -208,10 +279,12 @@ class MotionGrounding(object):
         if "joints" in skeleton_model:
             joints_map = skeleton_model["joints"]
             self.ik_chains = extract_ik_chains(skeleton_model)
+            add_temporary_heels_to_skeleton(skeleton, joints_map["left_ankle"], joints_map["right_ankle"], joints_map["left_toe"], joints_map["right_toe"], "left_heel", "right_heel")
             self.initialized = True
         else:
             self.ik_chains = dict()
             self.initialized = False
+        
 
     def set_constraints(self, constraints):
         self._constraints = constraints
@@ -243,12 +316,14 @@ class MotionGrounding(object):
         new_frames = motion_vector.frames[:]
         self._shift_root_using_static_offset(new_frames, scene_interface)
         self.shift_root_to_reach_constraints(new_frames)
-        self.blend_at_transitions(new_frames)
+        if len(new_frames) > 1:
+            self.blend_at_transitions(new_frames)
         if self.use_analytical_ik:
             self.apply_analytical_ik(new_frames)
         else:
             self.apply_ik_constraints(new_frames)
-        self.blend_at_transitions(new_frames)
+        if len(new_frames) > 1:
+            self.blend_at_transitions(new_frames)
         return new_frames
 
     def apply_on_frame(self, frame, scene_interface):
