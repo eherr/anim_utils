@@ -235,10 +235,6 @@ class AnalyticalLimbIK(object):
         return quaternion_from_matrix(new_local)
 
     def calculate_end_effector_rotation(self, frame, target_dir):
-        #print "end effector rotation", self.end_effector, target_dir
-        #end_effector_m = self.skeleton.nodes[self.end_effector].get_global_matrix(frame)[:3, :3]
-        #src_dir = np.dot(end_effector_m, self.local_end_effector_dir)
-        #src_dir = normalize(src_dir)
         src_dir = self.get_joint_dir(frame, self.end_effector)
         global_delta_q = find_rotation_between_vectors(src_dir, target_dir)
         new_local_q = self._to_local_coordinate_system(frame, self.end_effector, global_delta_q)
@@ -250,10 +246,6 @@ class AnalyticalLimbIK(object):
         delta_orientation = quaternion_multiply(target_orientation, quaternion_inverse(q))
         new_local_q = self._to_local_coordinate_system(frame, self.end_effector, delta_orientation)
         frame[self.end_effector_indices] = new_local_q
-        #t = self.skeleton.nodes[self.skeleton.nodes[self.end_effector].children[0].node_name].get_global_position(frame)
-        #h = self.skeleton.nodes[self.skeleton.nodes[self.end_effector].children[1].node_name].get_global_position(frame)
-        #original_direction = normalize(t - h)
-        #print original_direction
 
     def get_global_joint_orientation(self, joint_name, frame):
         m = self.skeleton.nodes[joint_name].get_global_matrix(frame)
