@@ -22,18 +22,19 @@
 # USE OR OTHER DEALINGS IN THE SOFTWARE.
 import collections
 import numpy as np
+from scipy.interpolate import UnivariateSpline
 from transformations import quaternion_from_matrix, quaternion_multiply, quaternion_matrix, quaternion_slerp, quaternion_inverse
 from ..animation_data.skeleton_models import *
 from .motion_grounding import MotionGroundingConstraint, FOOT_STATE_SWINGING
 from .utils import get_average_joint_position, get_average_joint_direction, normalize, get_average_direction_from_target
 from ..animation_data.utils import quaternion_from_vector_to_vector
 
-def get_vertical_velocity_and_acceleration(positions):
+def get_velocity_and_acceleration(scalars):
     """ https://stackoverflow.com/questions/40226357/second-derivative-in-python-scipy-numpy-pandas
     """
-    ps = np.array(ps)
-    x = np.linspace(0, len(positions), len(positions))
-    ys = np.array(ps[:, 1])
+    ps = np.array(scalars)
+    x = np.linspace(0, len(scalars), len(scalars))
+    ys = np.array(ps[:-1])
     y_spl = UnivariateSpline(x, ys, s=0, k=4)
     velocity = y_spl.derivative(n=1)
     acceleration = y_spl.derivative(n=2)
@@ -44,10 +45,16 @@ def get_joint_vertical_velocity_and_acceleration(skeleton, frames, joints):
     for joint in joints:
         ps = []
         for frame in frames:
-            p = skeleton.nodes[joint_name].get_global_position(frame)
-            ps.append(p)
-        v, a = get_vertical_velocity_and_acceleration(positions)
-        joint_heights[joint] = ps, v, a
+            p = skeleton.nodes[joint].get_global_position(frame)
+            ps.append(p[1])
+        if len(ps)> 1:
+            v, a = get_vertical_velocity_and_acceleration(ps)
+            joint_heights[joint] = ps[:-1], v, a
+        elif len(ps) == 1:
+            joint_heights[joint] = [ps[0]], [0], [0]
+        else:
+            joint_heights[joint] = [], [], []
+
     return joint_heights
 
 
@@ -72,7 +79,6 @@ def guess_ground_height(skeleton, frames, start_frame, n_frames, foot_joints):
         if new_min_height < minimum_height:
             minimum_height = new_min_height
     return minimum_height
-
 
 
 def get_quat_delta(qa, qb):
@@ -353,11 +359,11 @@ class FootplantConstraintGenerator(object):
         for f in frames:
             ground_contacts.append([])
         for joint in joints:
-            ps, yv, ya = joint_heights[joint]
-            for frame_idx, p in enumerate(ps[:-1]):
-                velocity = np.sqrt(yv[frame_idx]*yv[frame_idx])
-                if p[1] - ground_height < self.contact_tolerance:# or velocity < self.velocity_tolerance and zero_crossings[frame_idx]
-                    ground_contacts[frame_idx].append(joint)
+            ps, yv, ya = joint_y_vel_acc[joint]
+            for idx, p in enumerate(ps):
+                #velocity = np.sqrt(yv[idx]*yv[idx])
+                if p - ground_height < self.contact_tolerance:# or velocity < self.velocity_tolerance and zero_crossings[frame_idx]
+                    ground_contacts[idx].append(joint)
         return self.filter_outliers(ground_contacts, joints)
 
     def filter_outliers(self, ground_contacts, joints):
@@ -511,7 +517,7 @@ class FootplantConstraintGenerator(object):
 
         # set target ankle position based on the  grounded heel and the global target orientation of the ankle
         m = quaternion_matrix(orientation)[:3,:3]
-        target_heel_offset = np.dot(m, self.heel_offset)
+        target_heel_offset = np.dot(m, self.skeleton.nodes[heel_joint_name].offset)
         ca = ch - target_heel_offset
         #print "set ankle constraint both", ch, ca, target_heel_offset
         constraint = MotionGroundingConstraint(frame_idx, ankle_joint_name, ca, None, orientation)
