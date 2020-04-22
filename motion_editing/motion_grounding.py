@@ -174,16 +174,22 @@ def add_fixed_dofs_to_frame(skeleton, frame):
             full_frame += node.rotation.tolist()
     return full_frame
 
-def extract_ik_chains(joints_map):
+def extract_ik_chains(skeleton_model):
+    joints_map = skeleton_model["joints"]
+    cos_map = skeleton_model["cos_map"]
     new_ik_chains = dict()
     for j in IK_CHAINS_DEFAULT_SKELETON:
         mapped_j = joints_map[j]
         root_joint = IK_CHAINS_DEFAULT_SKELETON[j]["root"]
         free_joint = IK_CHAINS_DEFAULT_SKELETON[j]["joint"]
         if root_joint in joints_map and free_joint in joints_map:
-            new_ik_chains[mapped_j] = copy(IK_CHAINS_DEFAULT_SKELETON[j])
-            new_ik_chains[mapped_j]["root"] = joints_map[root_joint]
-            new_ik_chains[mapped_j]["joint"] = joints_map[free_joint]
+            mapped_free_joint = joints_map[free_joint]
+            if mapped_free_joint in cos_map:
+                new_ik_chains[mapped_j] = copy(IK_CHAINS_DEFAULT_SKELETON[j])
+                new_ik_chains[mapped_j]["root"] = joints_map[root_joint]
+                new_ik_chains[mapped_j]["joint"] = mapped_free_joint
+                new_ik_chains[mapped_j]["joint_axis"] = cos_map[mapped_free_joint]["x"]
+                new_ik_chains[mapped_j]["end_effector_dir"] = cos_map[mapped_free_joint]["y"]
     return new_ik_chains
 
 class MotionGrounding(object):
@@ -201,10 +207,10 @@ class MotionGrounding(object):
         self.damp_factor = damp_factor
         if "joints" in skeleton_model:
             joints_map = skeleton_model["joints"]
-            self._ik_chains = extract_ik_chains(joints_map)
+            self.ik_chains = extract_ik_chains(skeleton_model)
             self.initialized = True
         else:
-            self._ik_chains = dict()
+            self.ik_chains = dict()
             self.initialized = False
 
     def set_constraints(self, constraints):
@@ -351,14 +357,13 @@ class MotionGrounding(object):
     def apply_analytical_ik(self, frames):
         n_frames = len(frames)
         for frame_idx, constraints in self._constraints.items():
-            if 0 <= frame_idx < n_frames:
-                print("process frame", frame_idx, len(constraints))
+            if 0 <= frame_idx < n_frames and len(constraints)> 0:
                 self.apply_analytical_ik_on_frame(frames[frame_idx], constraints)
 
     def apply_analytical_ik_on_frame(self, frame, constraints):
         for c in constraints:
-            if c.joint_name in self._ik_chains:
-                data = self._ik_chains[c.joint_name]
+            if c.joint_name in self.ik_chains:
+                data = self.ik_chains[c.joint_name]
                 ik = AnalyticalLimbIK.init_from_dict(self.skeleton, c.joint_name, data, damp_angle=self.damp_angle, damp_factor=self.damp_factor)
                 frame = ik.apply(frame, c.position, c.orientation)
             else:
@@ -368,7 +373,7 @@ class MotionGrounding(object):
 
     def apply_orientation_constraints_on_frame(self, frame, constraints):
         for c in constraints:
-            data = self._ik_chains[c.joint_name]
+            data = self.ik_chains[c.joint_name]
             ik = AnalyticalLimbIK.init_from_dict(self.skeleton, c.joint_name, data, damp_angle=self.damp_angle, damp_factor=self.damp_factor)
             ik.set_end_effector_rotation2(frame, c.orientation)
         return frame
