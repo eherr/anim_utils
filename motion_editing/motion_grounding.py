@@ -385,24 +385,25 @@ class MotionGrounding(object):
                 frames[frame_idx][:3] = p
 
     def generate_root_constraint_for_one_foot(self, frame, c):
-        root = self.skeleton.skeleton_model["joints"]["pelvis"]  # pelvis
-        offset = [0, self.skeleton.nodes[root].offset[0], -self.skeleton.nodes[root].offset[1]]
-        root_pos = self.skeleton.nodes[root].get_global_position(frame)
-        target_length = np.linalg.norm(c.position - root_pos)
+        pelvis = self.skeleton.skeleton_model["joints"]["pelvis"]
+        pelvis_pos = self.skeleton.nodes[pelvis].get_global_position(frame)
+        target_length = np.linalg.norm(c.position - pelvis_pos)
         limb_length = self.get_limb_length(c.joint_name)
-        if target_length >= limb_length:
-            new_root_pos = (c.position + normalize(root_pos - c.position) * limb_length)
-            #print "one constraint on ", c.joint_name, "- before", root_pos, "after", new_root_pos
-            return new_root_pos - offset
-            #frame[:3] = new_root_pos
-
+        if target_length < limb_length:
+            return frame[:3] # no change
+        new_root_pos = (c.position + normalize(root_pos - c.position) * limb_length)
+        if self.skeleton.root != pelvis:
+            root_m = self.skeleton.nodes[self.skeleton.root].get_global_matrix(frame)[:3,:3]
+            new_root_pos -= np.dot(root_m, self.skeleton.nodes[pelvis].offset)
         else:
-            print("no change")
+            new_root_pos -= self.skeleton.nodes[root].offset
+        return new_root_pos
 
     def generate_root_constraint_for_two_feet(self, frame, constraint1, constraint2, limb_length_offset=0.0):
         """ Set the root position to the projection on the intersection of two spheres """
-        root = self.skeleton.skeleton_model["joints"]["pelvis"]
-        m = self.skeleton.nodes[root].get_global_matrix(frame)
+        
+        pelvis = self.skeleton.skeleton_model["joints"]["pelvis"]
+        m = self.skeleton.nodes[pelvis].get_global_matrix(frame)
         p = m[:3, 3]
         #print("root position", root, p)
         t1 = np.linalg.norm(constraint1.position - p)
@@ -418,11 +419,13 @@ class MotionGrounding(object):
         if t1 < r1 and t2 < r2:
             return None
         #print("adapt root for two constraints", constraint1.position, r1, constraint2.position, r2)
-        p_c = project_on_intersection_circle(p, c1, r1, c2, r2)
-        #if self.skeleton.root != root:
-        #p_c -= [0, self.skeleton.nodes[root].offset[0], -self.skeleton.nodes[root].offset[1]]
-        p_c -= self.skeleton.nodes[root].offset
-        return p_c
+        new_root_pos = project_on_intersection_circle(p, c1, r1, c2, r2)
+        if self.skeleton.root != pelvis:
+            root_m = self.skeleton.nodes[self.skeleton.root].get_global_matrix(frame)[:3,:3]
+            new_root_pos -= np.dot(root_m, self.skeleton.nodes[pelvis].offset)
+        else:
+            new_root_pos -= self.skeleton.nodes[pelvis].offset
+        return new_root_pos
 
     def get_limb_length(self, joint_name):
         limb_length = np.linalg.norm(self.skeleton.nodes[joint_name].offset)
