@@ -276,7 +276,7 @@ class MotionGrounding(object):
         self.skeleton_model = skeleton_model
         self.damp_angle = damp_angle
         self.damp_factor = damp_factor
-        if "joints" in skeleton_model:
+        if "joints" in skeleton_model and "left_toe" in skeleton_model["joints"] and "right_toe" in skeleton_model["joints"]:
             joints_map = skeleton_model["joints"]
             self.ik_chains = extract_ik_chains(skeleton_model)
             add_temporary_heels_to_skeleton(skeleton, joints_map["left_ankle"], joints_map["right_ankle"], joints_map["left_toe"], joints_map["right_toe"], "left_heel", "right_heel")
