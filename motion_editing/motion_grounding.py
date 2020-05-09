@@ -245,9 +245,9 @@ def add_fixed_dofs_to_frame(skeleton, frame):
             full_frame += node.rotation.tolist()
     return full_frame
 
-def extract_ik_chains(skeleton_model):
-    joints_map = skeleton_model["joints"]
-    cos_map = skeleton_model["cos_map"]
+def extract_ik_chains(skeleton, damp_angle, damp_factor):
+    joints_map = skeleton.skeleton_model["joints"]
+    cos_map = skeleton.skeleton_model["cos_map"]
     new_ik_chains = dict()
     for j in IK_CHAINS_DEFAULT_SKELETON:
         mapped_j = joints_map[j]
@@ -256,11 +256,12 @@ def extract_ik_chains(skeleton_model):
         if root_joint in joints_map and free_joint in joints_map:
             mapped_free_joint = joints_map[free_joint]
             if mapped_free_joint in cos_map:
-                new_ik_chains[mapped_j] = copy(IK_CHAINS_DEFAULT_SKELETON[j])
-                new_ik_chains[mapped_j]["root"] = joints_map[root_joint]
-                new_ik_chains[mapped_j]["joint"] = mapped_free_joint
-                new_ik_chains[mapped_j]["joint_axis"] = cos_map[mapped_free_joint]["x"]
-                new_ik_chains[mapped_j]["end_effector_dir"] = cos_map[mapped_free_joint]["y"]
+                data = copy(IK_CHAINS_DEFAULT_SKELETON[j])
+                data["root"] = joints_map[root_joint]
+                data["joint"] = mapped_free_joint
+                data["joint_axis"] = cos_map[mapped_free_joint]["x"]
+                data["end_effector_dir"] = cos_map[mapped_free_joint]["y"]
+                new_ik_chains[mapped_j] = AnalyticalLimbIK.init_from_dict(skeleton, mapped_j, data, damp_angle=damp_angle, damp_factor=damp_factor)
     return new_ik_chains
 
 class MotionGrounding(object):
@@ -278,7 +279,8 @@ class MotionGrounding(object):
         self.damp_factor = damp_factor
         if "joints" in skeleton_model and "left_toe" in skeleton_model["joints"] and "right_toe" in skeleton_model["joints"]:
             joints_map = skeleton_model["joints"]
-            self.ik_chains = extract_ik_chains(skeleton_model)
+            self.ik_chains = extract_ik_chains(skeleton, self.damp_angle, self.damp_factor)  
+           
             add_temporary_heels_to_skeleton(skeleton, joints_map["left_ankle"], joints_map["right_ankle"], joints_map["left_toe"], joints_map["right_toe"], "left_heel", "right_heel")
             self.initialized = True
         else:
@@ -314,7 +316,8 @@ class MotionGrounding(object):
 
     def run(self, motion_vector, scene_interface=None):
         new_frames = motion_vector.frames[:]
-        self._shift_root_using_static_offset(new_frames, scene_interface)
+        if scene_interface is not None:
+            self.shift_root_to_ground(new_frames, scene_interface)
         self.shift_root_to_reach_constraints(new_frames)
         if len(new_frames) > 1:
             self.blend_at_transitions(new_frames)
@@ -354,7 +357,7 @@ class MotionGrounding(object):
             create_transition_for_joints_using_slerp(frames, joint_parameter_indices, end, transition_end, backward_steps, BLEND_DIRECTION_BACKWARD)
 
     def apply_ik_constraints(self, frames):
-        for frame_idx, constraints in list(self._constraints.items()):
+        for frame_idx, constraints in self._constraints.items():
             if 0 <= frame_idx < len(frames):
                 frames[frame_idx] = self._ik.modify_frame(frames[frame_idx], constraints)
 
@@ -365,7 +368,7 @@ class MotionGrounding(object):
 
     def generate_root_positions_from_foot_constraints(self, frames):
         root_constraints = []
-        for frame_idx, constraints in list(self._constraints.items()):
+        for frame_idx, constraints in self._constraints.items():
             if 0 <= frame_idx < len(frames):
                 grounding_constraints = [c for c in constraints if c.foot_state==FOOT_STATE_GROUNDED]
                 n_constraints = len(grounding_constraints)
@@ -392,11 +395,11 @@ class MotionGrounding(object):
         if target_length < limb_length:
             return frame[:3] # no change
         new_root_pos = (c.position + normalize(root_pos - c.position) * limb_length)
-        if self.skeleton.root != pelvis:
+        if np.linalg.norm(self.skeleton.nodes[pelvis].offset) > 0.0:
             root_m = self.skeleton.nodes[self.skeleton.root].get_global_matrix(frame)[:3,:3]
             new_root_pos -= np.dot(root_m, self.skeleton.nodes[pelvis].offset)
         else:
-            new_root_pos -= self.skeleton.nodes[root].offset
+            new_root_pos -= self.skeleton.nodes[pelvis].offset
         return new_root_pos
 
     def generate_root_constraint_for_two_feet(self, frame, constraint1, constraint2, limb_length_offset=0.0):
@@ -420,7 +423,7 @@ class MotionGrounding(object):
             return None
         #print("adapt root for two constraints", constraint1.position, r1, constraint2.position, r2)
         new_root_pos = project_on_intersection_circle(p, c1, r1, c2, r2)
-        if self.skeleton.root != pelvis:
+        if np.linalg.norm(self.skeleton.nodes[pelvis].offset) > 0.0:
             root_m = self.skeleton.nodes[self.skeleton.root].get_global_matrix(frame)[:3,:3]
             new_root_pos -= np.dot(root_m, self.skeleton.nodes[pelvis].offset)
         else:
@@ -441,9 +444,7 @@ class MotionGrounding(object):
     def apply_analytical_ik_on_frame(self, frame, constraints):
         for c in constraints:
             if c.joint_name in self.ik_chains:
-                data = self.ik_chains[c.joint_name]
-                ik = AnalyticalLimbIK.init_from_dict(self.skeleton, c.joint_name, data, damp_angle=self.damp_angle, damp_factor=self.damp_factor)
-                frame = ik.apply(frame, c.position, c.orientation)
+                frame = self.ik_chains[c.joint_name].apply(frame, c.position, c.orientation)
             else:
                 print("could not find ik chain definition for ", c.joint_name)
                 frame = self._ik.modify_frame(frame, constraints)
@@ -451,9 +452,7 @@ class MotionGrounding(object):
 
     def apply_orientation_constraints_on_frame(self, frame, constraints):
         for c in constraints:
-            data = self.ik_chains[c.joint_name]
-            ik = AnalyticalLimbIK.init_from_dict(self.skeleton, c.joint_name, data, damp_angle=self.damp_angle, damp_factor=self.damp_factor)
-            ik.set_end_effector_rotation2(frame, c.orientation)
+            self.ik_chains[c.joint_name].set_end_effector_rotation2(frame, c.orientation)
         return frame
 
     def blend_at_transitions(self, frames):
@@ -463,10 +462,21 @@ class MotionGrounding(object):
             self._blend_around_frame_range(frames, start, end, joint_names)
         return frames
 
-    def _shift_root_using_static_offset(self, frames, scene_interface):
+    def shift_root_to_ground(self, frames, scene_interface):
         for idx, frame in enumerate(frames):
             x = frames[idx][0]
             z = frames[idx][2]
             target_ground_height = scene_interface.get_height(x, z)
-            shift = target_ground_height - frames[idx][1]
+            root_pos = self.get_projected_root_pos(frames[idx])
+            shift = target_ground_height - root_pos[1]
             frames[idx][1] += shift
+
+    def get_projected_root_pos(self, frame):
+        pelvis = self.skeleton.skeleton_model["joints"]["pelvis"]
+        ground_pos = self.skeleton.nodes[pelvis].get_global_position(frame)
+        if np.linalg.norm(self.skeleton.nodes[pelvis].offset) > 0.0:
+            root_m = self.skeleton.nodes[self.skeleton.root].get_global_matrix(frame)[:3,:3]
+            ground_pos -= np.dot(root_m, self.skeleton.nodes[pelvis].offset)
+        else:
+            ground_pos -= self.skeleton.nodes[pelvis].offset
+        return ground_pos

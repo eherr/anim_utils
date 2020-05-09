@@ -363,6 +363,9 @@ class FootplantConstraintGenerator(object):
                 #velocity = np.sqrt(yv[idx]*yv[idx])
                 if p - ground_height < self.contact_tolerance:# or velocity < self.velocity_tolerance and zero_crossings[frame_idx]
                     ground_contacts[idx].append(joint)
+        # copy contacts of frame not covered by velocity
+        if len(ground_contacts) > 1:
+            ground_contacts[-1] = ground_contacts[-2]
         return self.filter_outliers(ground_contacts, joints)
 
     def filter_outliers(self, ground_contacts, joints):
@@ -452,7 +455,7 @@ class FootplantConstraintGenerator(object):
         joint_names = [self.right_foot, self.left_foot]
 
         for frame_idx in range(n_frames):
-            if frame_idx in list(constraints.keys()):
+            if frame_idx in constraints:
                 for j in joint_names:
                     constrained_joints = [c.joint_name for c in constraints[frame_idx]]
                     if j in constrained_joints:
@@ -487,6 +490,7 @@ class FootplantConstraintGenerator(object):
             elif foot_joints["toe"] in joint_names:
                 c = self.generate_grounding_constraint_from_toe(frames, foot_joints["ankle"], foot_joints["toe"], frame_idx, end_frame)
             if c is not None:
+                c.heel_offset = self.skeleton.nodes[foot_joints["heel"]].offset
                 #print "generated constraint for", side, "at", frame_idx, joint_names
                 new_constraints.append(c)
         return new_constraints
@@ -549,6 +553,7 @@ class FootplantConstraintGenerator(object):
         target_toe_offset = a - t  # difference between unmodified toe and ankle at the frame
         ca = ct + target_toe_offset  # move ankle so toe is on the ground
         constraint = MotionGroundingConstraint(frame_idx, ankle_joint_name, ca, None, None)
+
         constraint.toe_position = ct
         constraint.global_toe_offset = target_toe_offset
         return constraint
@@ -556,7 +561,7 @@ class FootplantConstraintGenerator(object):
     def set_smoothing_constraints(self, frames, constraints):
         """ Set orientation constraints to singly constrained frames to smooth the foot orientation (Section 4.2)
         """
-        for frame_idx in list(constraints.keys()):
+        for frame_idx in constraints:
             for constraint in constraints[frame_idx]:
                 if constraint.joint_name not in self.orientation_constraint_buffer[frame_idx]:  # singly constrained
                     self.set_smoothing_constraint(frames, constraint, frame_idx, self.smoothing_constraints_window)
@@ -608,7 +613,7 @@ class FootplantConstraintGenerator(object):
             global_q = normalize(quaternion_slerp(oq, fq, t, spin=0, shortestpath=True))
             constraint.orientation = normalize(global_q)
             constraint.position = regenerate_ankle_constraint_with_new_orientation(constraint.heel_position,
-                                                                                   self.heel_offset,
+                                                                                   constraint.heel_offset,
                                                                                    constraint.orientation)
 
     def get_previous_joint_position_from_buffer(self, frames, frame_idx, end_frame, joint_name):
@@ -628,17 +633,17 @@ class FootplantConstraintGenerator(object):
             return p
 
     def get_joint_position_from_buffer(self, frame_idx, joint_name):
-        if frame_idx not in list(self.position_constraint_buffer.keys()):
+        if frame_idx not in self.position_constraint_buffer:
             return None
-        if joint_name not in list(self.position_constraint_buffer[frame_idx].keys()):
+        if joint_name not in self.position_constraint_buffer[frame_idx]:
             return None
         return self.position_constraint_buffer[frame_idx][joint_name]
 
     def update_joint_position_in_buffer(self, frames, frame_idx, end_frame, joint_name):
         end_frame = min(end_frame, frames.shape[0])
-        if frame_idx not in list(self.position_constraint_buffer.keys()):
+        if frame_idx not in self.position_constraint_buffer:
             self.position_constraint_buffer[frame_idx] = dict()
-        if joint_name not in list(self.position_constraint_buffer[frame_idx].keys()):
+        if joint_name not in self.position_constraint_buffer[frame_idx]:
             p = get_average_joint_position(self.skeleton, frames, joint_name, frame_idx, end_frame)
             #p[1] = self.scene_interface.get_height(p[0], p[2])
             #print "add", joint_name, p, frame_idx, end_frame
