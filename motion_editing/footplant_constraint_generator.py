@@ -491,7 +491,6 @@ class FootplantConstraintGenerator(object):
                 c = self.generate_grounding_constraint_from_toe(frames, foot_joints["ankle"], foot_joints["toe"], frame_idx, end_frame)
             if c is not None:
                 c.heel_offset = self.skeleton.nodes[foot_joints["heel"]].offset
-                #print "generated constraint for", side, "at", frame_idx, joint_names
                 new_constraints.append(c)
         return new_constraints
 
