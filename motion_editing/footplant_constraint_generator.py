@@ -416,7 +416,7 @@ class FootplantConstraintGenerator(object):
                 step_ground_contacts = convert_plant_range_to_ground_contacts(step.start_frame, step.end_frame, step_plant_range)
                 ground_contacts.update(step_ground_contacts)
                 for frame_idx, joint_names in list(step_ground_contacts.items()):
-                    constraints[frame_idx] = self.generate_grounding_constraint(motion_vector.frames, frame_idx,
+                    constraints[frame_idx] = self.generate_grounding_constraints(motion_vector.frames, frame_idx,
                                                                                 joint_names)
 
         self.set_smoothing_constraints(motion_vector.frames, constraints)
@@ -435,7 +435,7 @@ class FootplantConstraintGenerator(object):
             ground_contacts = self.detect_ground_contacts(motion_vector.frames, self.contact_joints)
         # generate constraints
         for frame_idx, joint_names in enumerate(ground_contacts):
-            constraints[frame_idx] = self.generate_grounding_constraint(motion_vector.frames, frame_idx, joint_names)
+            constraints[frame_idx] = self.generate_grounding_constraints(motion_vector.frames, frame_idx, joint_names)
 
         self.set_smoothing_constraints(motion_vector.frames, constraints)
 
@@ -474,7 +474,7 @@ class FootplantConstraintGenerator(object):
                     state[c.joint_name] = -1  # stop constrained range no constraint defined
         return blend_ranges
 
-    def generate_grounding_constraint(self, frames, frame_idx, joint_names):
+    def generate_grounding_constraints(self, frames, frame_idx, joint_names):
         self.position_constraint_buffer[frame_idx] = dict()
         self.orientation_constraint_buffer[frame_idx] = dict()
 
