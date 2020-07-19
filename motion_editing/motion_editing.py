@@ -644,13 +644,25 @@ class MotionEditing(object):
         delta_frames = collections.OrderedDict(sorted(delta_frames.items(), key=lambda x: x[0]))
         return list(delta_frames.keys()), np.array(list(delta_frames.values())), list(joint_list)
 
-    def edit_motion_using_displacement_map_and_ccd(self, frames, constraints, n_max_iter=100, root_joint=None, influence_range=40, plot=False):
-        """ References
+    def edit_motion_using_displacement_map_and_ccd(self, frames, constraints, n_max_iter=100, root_joint=None, transition_window=None, plot=False):
+        """ Apply IK and create a transition using a displacement map
+            References:
                 Witkin and Popovic: Motion Warping, 1995.
                 Bruderlin and Williams: Motion Signal Processing, 1995.
                 Lee and Shin: A Hierarchical Approach to Interactive Motion Editing for Human-like Figures, 1999.
+            Args:
+                frames(np.array): input frames to be modified
+                constraints(list<KeyframeConstraint>): list of constraints
+                n_max_iter(int): optional maximum ik iterations
+                root_joint(str): optional root joint of ik chain
+                transition_window(int): optional blending window size
+                plot(bool): optional plot delta curve
+            Returns:
+                frames(np.array): modifed frames
         """
-        d_times, delta_frames, joint_list = self.generate_delta_frames_using_ccd(frames, constraints, n_max_iter, root_joint, influence_range)
+        if transition_window is None:
+            transition_window = self.transition_window
+        d_times, delta_frames, joint_list = self.generate_delta_frames_using_ccd(frames, constraints, n_max_iter, root_joint, transition_window)
         if self.skeleton.skeleton_model is not None and "joints" in self.skeleton.skeleton_model and "neck" in self.skeleton.skeleton_model["joints"]:
             joint_name = self.skeleton.skeleton_model["joints"]["neck"]
             if joint_name is not None:
