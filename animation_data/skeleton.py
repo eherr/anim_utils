@@ -531,4 +531,18 @@ class Skeleton(object):
                 bones.append(bone_desc)
         return bones
 
-    
+    def get_body_hip2foot_height(self):
+        """ helper function for autoscale by gemlongman"""
+        if self.skeleton_model is None:
+            print("skeleton.skeleton_model is None")
+            return None
+        joint_pelvis = self.skeleton_model["joints"]["pelvis"] # upperleg maybe better
+        joint_right_toe = self.skeleton_model["joints"]["right_ankle"]# ["right_toe"] 
+        ident_f = self.identity_frame
+        joint_pelvis_p = self.nodes[joint_pelvis].get_global_position(ident_f)
+        joint_right_toe_p = self.nodes[joint_right_toe].get_global_position(ident_f)
+        delta = joint_pelvis_p - joint_right_toe_p
+        #it should be same dircetion as body up,there is a simple way to get length
+        if delta[1] < 0.01:
+            return  max(abs(delta.max()), abs(delta.min()))
+        return delta[1]
