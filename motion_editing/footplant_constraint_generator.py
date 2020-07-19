@@ -349,6 +349,8 @@ class FootplantConstraintGenerator(object):
         self.position_constraint_buffer = dict()
         self.orientation_constraint_buffer = dict()
         self.velocity_tolerance = 0
+        if "velocity_tolerance" in settings:
+            self.velocity_tolerance = settings["velocity_tolerance"]
 
     def detect_ground_contacts(self, frames, joints, ground_height=0):
         """https://stackoverflow.com/questions/3843017/efficiently-detect-sign-changes-in-python
@@ -360,8 +362,8 @@ class FootplantConstraintGenerator(object):
         for joint in joints:
             ps, yv, ya = joint_y_vel_acc[joint]
             for idx, p in enumerate(ps):
-                #velocity = np.sqrt(yv[idx]*yv[idx])
-                if p - ground_height < self.contact_tolerance:# or velocity < self.velocity_tolerance and zero_crossings[frame_idx]
+                velocity = np.sqrt(yv[idx]*yv[idx])
+                if p - ground_height < self.contact_tolerance or velocity < self.velocity_tolerance :#and zero_crossings[frame_idx]
                     ground_contacts[idx].append(joint)
         # copy contacts of frame not covered by velocity
         if len(ground_contacts) > 1:
