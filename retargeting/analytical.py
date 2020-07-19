@@ -228,7 +228,7 @@ def create_correction_map(target_skeleton,target_to_src_joint_map, src_cos_map, 
     correction_map = dict()
     for target_name in target_to_src_joint_map:
         src_name = target_to_src_joint_map[target_name]
-        if src_name in src_cos_map and target_name is not None:
+        if src_name in src_cos_map and target_name is not None and target_name in target_cos_map:
             src_zero_vector_y = src_cos_map[src_name]["y"]
             target_zero_vector_y = target_cos_map[target_name]["y"]
             src_zero_vector_x = src_cos_map[src_name]["x"]
@@ -264,7 +264,7 @@ class Retargeting(object):
             else:
                 self.src_child_map[src_name] = None
         self.target_cos_map = create_local_cos_map_from_skeleton_axes_with_map(self.target_skeleton)
-        self.src_cos_map = create_local_cos_map_from_skeleton_axes_with_map(self.src_skeleton, flip=1.0, project=True)
+        self.src_cos_map = create_local_cos_map_from_skeleton_axes_with_map(self.src_skeleton)
 
         if "cos_map" in target_skeleton.skeleton_model:
             self.target_cos_map.update(target_skeleton.skeleton_model["cos_map"])
