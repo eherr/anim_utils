@@ -394,43 +394,58 @@ class Skeleton(object):
             for c in constraints:
                 chain_end_joints[c.joint_name] = self.root
         while n_iters < n_max_iter and error > eps and not is_stuck:
-            error = 0
-            #print("iter", n_iters)
-            for c in constraints:
-                joint_error = 0
-                if c.look_at:
-                    pos = c.look_at_pos
-                    if pos is None:
-                        pos = c.position
-                    joint_name = self.skeleton_model["joints"]["head"]
-                    if joint_name is not None:
-                        local_dir = LOOK_AT_DIR
-                        if "look_at_dir" in self.skeleton_model:
-                            local_dir = self.skeleton_model["look_at_dir"]
-                        parent_node = self.nodes[joint_name].parent
-                        if parent_node is not None:
-                            frame = orient_node_to_target_look_at(self, frame, parent_node.node_name, joint_name, pos, local_dir=local_dir)
-                if c.position is not None and c.relative_parent_joint_name is None:
-                    frame, _joint_error = run_ccd(self, frame, c.joint_name, c, eps, ccd_iters, chain_end_joints[c.joint_name], verbose)
-                    joint_error += _joint_error
-                elif c.relative_parent_joint_name is not None: # run ccd on relative constraint
-                    #turn relative constraint into a normal constraint
-                    _c = c.instantiate_relative_constraint(self, frame)
-                    #print("create relative constraint", _c.joint_name, c.relative_offset)
-                    frame, _joint_error = run_ccd(self, frame, _c.joint_name, _c, eps, ccd_iters, chain_end_joints[c.joint_name], verbose)
-                    joint_error += _joint_error
-                elif c.orientation is not None:
-                    frame = set_global_orientation(self, frame, c.joint_name, c.orientation)
-                else:
-                    print("ignore constraint on", c.joint_name, c.position)
-                error += joint_error
+            error = self._reach_target_positions_iteration(frame, constraints, chain_end_joints, eps, n_max_iter, ccd_iters, verbose)
             if abs(prev_error - error) < eps:
                 is_stuck = True
             #print("iter", is_stuck, error,eps, prev_error, len(constraints))
             prev_error = error
             n_iters += 1
         print("reached with error", error, n_iters)
+
+        # run a last correction step for each constraint separatley
+        for c in constraints:
+            root = self.nodes[c.joint_name].parent
+            d_iter = 1
+            while root is not None and root.parent is not None and d_iter < 2:
+                root = root.parent
+            if root is not None:
+                chain_end_joints[c.joint_name] = root.node_name
+                error = self._reach_target_positions_iteration(frame, [c], chain_end_joints, eps, n_max_iter, ccd_iters, verbose)
+                n_iters += 1
+                print("error in last correction", c.joint_name, error)
         return frame
+
+    def _reach_target_positions_iteration(self, frame, constraints, chain_end_joints=None, eps=0.0001, n_max_iter=500, ccd_iters=20, verbose=False):
+        error = 0
+        for c in constraints:
+            joint_error = 0
+            if c.look_at:
+                pos = c.look_at_pos
+                if pos is None:
+                    pos = c.position
+                joint_name = self.skeleton_model["joints"]["head"]
+                if joint_name is not None:
+                    local_dir = LOOK_AT_DIR
+                    if "look_at_dir" in self.skeleton_model:
+                        local_dir = self.skeleton_model["look_at_dir"]
+                    parent_node = self.nodes[joint_name].parent
+                    if parent_node is not None:
+                        frame = orient_node_to_target_look_at(self, frame, parent_node.node_name, joint_name, pos, local_dir=local_dir)
+            if c.position is not None and c.relative_parent_joint_name is None:
+                frame, _joint_error = run_ccd(self, frame, c.joint_name, c, eps, ccd_iters, chain_end_joints[c.joint_name], verbose)
+                joint_error += _joint_error
+            elif c.relative_parent_joint_name is not None: # run ccd on relative constraint
+                #turn relative constraint into a normal constraint
+                _c = c.instantiate_relative_constraint(self, frame)
+                #print("create relative constraint", _c.joint_name, c.relative_offset)
+                frame, _joint_error = run_ccd(self, frame, _c.joint_name, _c, eps, ccd_iters, chain_end_joints[c.joint_name], verbose)
+                joint_error += _joint_error
+            elif c.orientation is not None:
+                frame = set_global_orientation(self, frame, c.joint_name, c.orientation)
+            else:
+                print("ignore constraint on", c.joint_name, c.position)
+            error += joint_error
+        return error
 
     def set_joint_orientation(self, frame, joint_name, orientation):
         m = quaternion_matrix(orientation)
