@@ -405,27 +405,6 @@ class MotionEditing(object):
                 closest_start_frame = keyframe
         return closest_start_frame
 
-    def fill_rotate_events(self, motion_vector):
-        for keyframe in list(motion_vector.keyframe_event_list.keyframe_events_dict["events"].keys()):
-            keyframe = int(keyframe)
-            for event in motion_vector.keyframe_event_list.keyframe_events_dict["events"][keyframe]:
-                if event["event"] == "rotate":
-                    self.fill_rotate_event(motion_vector, event)
-
-    def fill_rotate_event(self, motion_vector, event):
-        joint_name = event["parameters"]["joint"]
-        orientation = event["parameters"]["globalOrientation"]
-        place_keyframe = event["parameters"]["referenceKeyframe"]
-        frames = motion_vector.frames[place_keyframe]
-        # compare delta with global hand orientation
-        joint_orientation = motion_vector.skeleton.nodes[joint_name].get_global_matrix(frames)
-        joint_orientation[:3, 3] = [0, 0, 0]
-        orientation_constraint = quaternion_matrix(orientation)
-        delta_orientation = np.dot(np.linalg.inv(joint_orientation), orientation_constraint)
-        euler = np.degrees(euler_from_matrix(delta_orientation))
-        # convert to CAD coordinate system
-        event["parameters"]["relativeOrientation"] = [euler[0], -euler[2], euler[1]]
-
     def generate_zero_frame(self):
         n_dims = len(self.skeleton.animated_joints) * 4 + 3
         zero_frame = np.zeros(n_dims)
@@ -496,8 +475,6 @@ class MotionEditing(object):
         return rf
     
     def add_delta_curve(self, frames, d_times, delta_frames, plot=False):
-        #print("dtimes", d_times)
-        #print("d frames", delta_frames.tolist())
         n_frames = len(frames)
         times = list(range(n_frames))
         d_curve = CubicMotionSpline.fit_frames(self.skeleton, d_times, delta_frames)
@@ -512,8 +489,6 @@ class MotionEditing(object):
         return np.array(new_frames)
 
     def add_reduced_delta_curve(self, frames, d_times, delta_frames, joint_list=None, plot=False):
-        #print("dtimes", d_times)
-        #print("d frames", delta_frames.tolist())
         n_frames = len(frames)
         times = list(range(n_frames))
         if joint_list is not None:
@@ -743,7 +718,6 @@ class MotionEditing(object):
                         chain_end_joints[c.joint_name] = root_joint
                 else:
                     chain_end_joints = None
-                
                 # init frame with changes from prev frame if it was edited
                 prev_frame_idx = frame_idx-1
                 if prev_frame_idx in delta_frames:
@@ -764,7 +738,6 @@ class MotionEditing(object):
             prev_static_joints = static_joints
         if activate_smoothing:
             for frame_idx in region_overlaps:
-                #print("apply transition smoothing", frame_idx)
                 new_frames = smooth_quaternion_frames(new_frames, frame_idx, self.window, False)
         return new_frames
 
@@ -808,9 +781,7 @@ class MotionEditing(object):
             start_frame_idx = self.get_global_frame_idx(c.canonical_keyframe, frame_offset, time_function)
             if c.constrain_orientation_in_region and c.canonical_end_keyframe is not None:
                 end_frame_idx = self.get_global_frame_idx(c.canonical_end_keyframe, frame_offset, time_function)
-                #print("apply ik constraint on region", start_frame_idx, end_frame_idx)
                 for frame_idx in range(start_frame_idx, end_frame_idx):
-                    #print("set orientation for", joint_name, "at", frame_idx)
                     frames[frame_idx] = self.skeleton.set_joint_orientation(frames[frame_idx], joint_name, c.orientation)
          return frames
     
@@ -824,7 +795,6 @@ class MotionEditing(object):
     def set_joint_orientation(self, joint_name, frames, start_idx, end_idx, target_orientation):
         for frame_idx in range(start_idx, end_idx):
             frames[frame_idx] = self.skeleton.set_joint_orientation(frames[frame_idx], joint_name, target_orientation)
-
 
     def copy_joint_parameters(self, nodes, frames, src_idx, dst_idx):
         for node in nodes:
@@ -840,7 +810,6 @@ class MotionEditing(object):
             o = self.skeleton.nodes[node].quaternion_frame_index * 4 + 3
             indices = list(range(o,o+4))
             smooth_joints_around_transition_using_slerp(frames, indices, keyframe, window)
-
         #window = 1000
         #h_window = int(window / 2)
         #start_idx = max(keyframe - h_window, 0)
@@ -890,7 +859,7 @@ class MotionEditing(object):
         start_window = dest_start -blend_start
         blend_end =  min(dest_end +n_blend_range, n_frames-1)
         end_window = blend_end- dest_end
-         #remove root indices
+        #remove root indices
         print("blend ", dest_start, dest_end, n_blend_range, start_window, end_window)
         quat_joint_index_list = list(joint_index_list)
         if self.skeleton.root in joint_list:
@@ -912,7 +881,6 @@ class MotionEditing(object):
                     print(j, q_indices)
                     frames = create_transition_for_joints_using_slerp(frames, q_indices, dest_end, blend_end, end_window, BLEND_DIRECTION_BACKWARD)
                 o += 4
-        
         return frames
 
     def stretch_motion(self, frames, n_dest_frames):
@@ -921,7 +889,6 @@ class MotionEditing(object):
         spline = CubicMotionSpline.fit_frames(self.skeleton, times, frames)
         step_size = (n_frames-1)/n_dest_frames
         streched_times = np.arange(0,n_frames-1,step_size)
-        #print(streched_times)
         new_frames = []
         for t in streched_times:
             f = spline.evaluate(t)
