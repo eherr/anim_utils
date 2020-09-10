@@ -28,7 +28,9 @@ from .numerical_ik_quat import NumericalInverseKinematicsQuat
 from .numerical_ik_exp import NumericalInverseKinematicsExp
 from .skeleton_pose_model import SkeletonPoseModel
 from .cubic_motion_spline import CubicMotionSpline, get_quaternion_delta
-from ..animation_data.motion_blending import smooth_joints_around_transition_using_slerp, create_transition_using_slerp, smooth_quaternion_frames
+from ..animation_data.motion_blending import smooth_joints_around_transition_using_slerp, create_transition_using_slerp, \
+                                             smooth_quaternion_frames, create_transition_for_joints_using_slerp, \
+                                              BLEND_DIRECTION_BACKWARD, BLEND_DIRECTION_FORWARD, smooth_translation_in_quat_frames
 from ..utilities.log import write_message_to_log, LOG_MODE_DEBUG
 from .utils import convert_exp_frame_to_quat_frame
 from .fabrik_chain import FABRIKChain, FABRIKBone
