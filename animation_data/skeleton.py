@@ -34,6 +34,7 @@ from transformations import quaternion_matrix
 from .skeleton_node import SkeletonEndSiteNode
 from .constants import ROTATION_TYPE_QUATERNION, ROTATION_TYPE_EULER, LEN_EULER, LEN_ROOT_POS, LEN_QUAT
 from ..motion_editing.coordinate_cyclic_descent import run_ccd, normalize, set_global_orientation, run_ccd_look_at, orient_node_to_target_look_at, LOOK_AT_DIR, SPINE_LOOK_AT_DIR, orient_node_to_target_look_at_projected
+from .joint_constraints import JointConstraint, HingeConstraint2, BallSocketConstraint, ConeConstraint, ShoulderConstraint, HeadConstraint, SpineConstraint
 
 
 class Skeleton(object):
@@ -561,3 +562,69 @@ class Skeleton(object):
         if delta[1] < 0.01:
             return  max(abs(delta.max()), abs(delta.min()))
         return delta[1]
+
+    def add_constraints(self, joint_constraints):
+        joint_map = self.skeleton_model["joints"]
+        for j in joint_constraints:
+            if j in joint_map:
+                skel_j = joint_map[j]
+            else:
+                continue
+            if skel_j not in self.nodes:
+                continue
+            c = joint_constraints[j]
+            if "stiffness" in c:
+                self.nodes[skel_j].stiffness = c["stiffness"]
+            h = None
+            if c["type"] == "static":
+                h = JointConstraint()
+                h.is_static = True
+                print("add static constraint to", skel_j)
+            elif c["type"] == "hinge":
+                swing_axis = np.array(c["swing_axis"])
+                twist_axis = np.array(c["twist_axis"])
+                deg_angle_range = None
+                if "k1" in c and "k2" in c:
+                    deg_angle_range = [c["k1"], c["k2"]]
+                print("add hinge constraint to", skel_j)
+                h = HingeConstraint2(swing_axis, twist_axis, deg_angle_range)
+            elif c["type"] == "ball":
+                axis = np.array(c["axis"])
+                k = np.radians(c["k"])
+                print("add ball socket constraint to", skel_j)
+                h = BallSocketConstraint(axis, k)
+            elif c["type"] == "cone":
+                axis = np.array(c["axis"])
+                k = np.radians(c["k"])
+                print("add cone constraint to", skel_j)
+                h = ConeConstraint(axis, k)
+            elif c["type"] == "shoulder":
+                axis = np.array(c["axis"])
+                k = np.radians(c["k"])
+                k1 = np.radians(c["k1"])
+                k2 = np.radians(c["k2"])
+                print("add shoulder socket constraint to", skel_j)
+                h = ShoulderConstraint(axis, k, k1, k2)
+            elif c["type"] == "head":
+                skel_j = self.nodes[skel_j].node_name
+                axis = np.array(c["axis"])
+                tk1 = np.radians(c["tk1"])
+                tk2 = np.radians(c["tk2"])
+                sk1 = np.radians(c["sk1"])
+                sk2 = np.radians(c["sk2"])
+                print("add head constraint to", skel_j)
+                ref_q = [1,0,0,0] 
+                h = HeadConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
+                h.joint_name = skel_j
+            elif c["type"] == "spine":
+                skel_j = self.nodes[skel_j].node_name
+                axis = np.array(c["axis"])
+                tk1 = np.radians(c["tk1"])
+                tk2 = np.radians(c["tk2"])
+                sk1 = np.radians(c["sk1"])
+                sk2 = np.radians(c["sk2"])
+                print("add spine constraint to", skel_j, j)
+                ref_q = [1,0,0,0]
+                h = SpineConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
+                h.joint_name = skel_j
+            self.nodes[skel_j].joint_constraint = h

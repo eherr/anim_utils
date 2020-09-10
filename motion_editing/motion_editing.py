@@ -32,7 +32,6 @@ from ..animation_data.motion_blending import smooth_joints_around_transition_usi
 from ..utilities.log import write_message_to_log, LOG_MODE_DEBUG
 from .utils import convert_exp_frame_to_quat_frame
 from .fabrik_chain import FABRIKChain, FABRIKBone
-from ..animation_data.joint_constraints import JointConstraint, HingeConstraint2, BallSocketConstraint, ConeConstraint, ShoulderConstraint, HeadConstraint, SpineConstraint
 from ..animation_data.skeleton import LOOK_AT_DIR, SPINE_LOOK_AT_DIR
 
 SPATIAL_CONSTRAINT_TYPE_KEYFRAME_POSITION = "keyframe_position"
@@ -195,76 +194,8 @@ class MotionEditing(object):
         self._fabrik_chains[joint_name] = create_fabrik_chain(self.skeleton, self.skeleton.reference_frame, node_order, activate_constraints)
         
     def add_constraints_to_skeleton(self, joint_constraints):
-        joint_map = self.skeleton.skeleton_model["joints"]
-        for j in joint_constraints:
-            if j in joint_map:
-                skel_j = joint_map[j]
-            else:
-                continue
-            if skel_j not in self.skeleton.nodes:
-                continue
-            c = joint_constraints[j]
-            if "stiffness" in c:
-                self.skeleton.nodes[skel_j].stiffness = c["stiffness"]
-
-            if c["type"] == "static":
-                h = JointConstraint()
-                h.is_static = True
-                self.skeleton.nodes[skel_j].joint_constraint = h
-                print("add static constraint to", skel_j)
-            elif c["type"] == "hinge":
-                swing_axis = np.array(c["swing_axis"])
-                twist_axis = np.array(c["twist_axis"])
-                deg_angle_range = None
-                if "k1" in c and "k2" in c:
-                    deg_angle_range = [c["k1"], c["k2"]]
-                print("add hinge constraint to", skel_j)
-                h = HingeConstraint2(swing_axis, twist_axis, deg_angle_range)
-                self.skeleton.nodes[skel_j].joint_constraint = h
-            elif c["type"] == "ball":
-                axis = np.array(c["axis"])
-                k = c["k"]
-                print("add ball socket constraint to", skel_j)
-                h = BallSocketConstraint(axis, k)
-                self.skeleton.nodes[skel_j].joint_constraint = h
-            elif c["type"] == "cone":
-                axis = np.array(c["axis"])
-                k = c["k"]
-                print("add cone constraint to", skel_j)
-                h = ConeConstraint(axis, k)
-                self.skeleton.nodes[skel_j].joint_constraint = h
-            elif c["type"] == "shoulder":
-                axis = np.array(c["axis"])
-                k = c["k"]
-                k1 = c["k1"]
-                k2 = c["k2"]
-                print("add shoulder socket constraint to", skel_j)
-                h = ShoulderConstraint(axis, k, k1, k2)
-                self.skeleton.nodes[skel_j].joint_constraint = h
-            elif c["type"] == "head":
-                skel_j = self.skeleton.nodes[skel_j].parent.node_name
-                axis = np.array(c["axis"])
-                tk1 = c["tk1"]
-                tk2 = c["tk2"]
-                sk1 = c["sk1"]
-                sk2 = c["sk2"]
-                print("add head constraint to", skel_j)
-                ref_q = [1,0,0,0] #  TODO get reference and axis from skeleton
-                h = HeadConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
-                h.joint_name = skel_j
-                self.skeleton.nodes[skel_j].joint_constraint = h
-            elif c["type"] == "spine":
-                skel_j = self.skeleton.nodes[skel_j].parent.node_name
-                axis = np.array(c["axis"])
-                tk1 = c["tk1"]
-                tk2 = c["tk2"]
-                sk1 = c["sk1"]
-                sk2 = c["sk2"]
-                print("add spine constraint to", skel_j)
-                ref_q = [1,0,0,0] #  TODO get reference and axis from skeleton
-                h = SpineConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
-                h.joint_name = skel_j
-                self.skeleton.nodes[skel_j].joint_constraint = h
+        """ legacy interface"""
+        self.skeleton.add_constraints(joint_constraints)
 
     def modify_motion_vector(self, motion_vector):
         for idx, action_ik_constraints in enumerate(motion_vector.ik_constraints):
