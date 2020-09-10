@@ -530,23 +530,6 @@ class Skeleton(object):
                 joints.append(joint)
         return joints
 
-    def generate_bone_list_description(self, animated_joints=None):
-        '''
-        Generate a list of bone description for point cloud visualization
-        :return:
-        '''
-        bones = []
-        index = 0
-        if animated_joints is None:
-            animated_joints = self.animated_joints
-        for node_name, node in self.nodes.items():
-            if node_name in animated_joints:
-                parent_joint_name = node.get_parent_name(animated_joints)
-                bone_desc = {'name': node_name, 'parent': parent_joint_name, 'index': index}
-                index += 1
-                bones.append(bone_desc)
-        return bones
-
     def get_body_hip2foot_height(self):
         """ helper function for autoscale by gemlongman"""
         if self.skeleton_model is None:
