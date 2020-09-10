@@ -67,7 +67,7 @@ hand_bounds = [{"dim": 0, "min": 30 * DEG2RAD, "max": 180 * DEG2RAD},
                {"dim": 1, "min": -15 * DEG2RAD, "max": 120 * DEG2RAD},
                {"dim": 1, "min": -40 * DEG2RAD, "max": 40 * DEG2RAD}]
 
-ROCKETBOX_ROOT_DIR = [0, 0, 1]
+
 ROCKETBOX_BOUNDS = {"LeftArm": [],  # {"dim": 1, "min": 0, "max": 90}
                   "RightArm": []  # {"dim": 1, "min": 0, "max": 90},{"dim": 0, "min": 0, "max": 90}
                     , "RightHand": hand_bounds,  # [[-90, 90],[0, 0],[-90,90]]
@@ -1251,17 +1251,17 @@ JOINT_CONSTRAINTS["right_elbow"] = {"type":"hinge", "swing_axis": [0,-1,0], "twi
 JOINT_CONSTRAINTS["left_elbow"] = {"type": "hinge", "swing_axis": [0,-1,0], "twist_axis": [0,0,1], "k1":-90, "k2":90}
 #JOINT_CONSTRAINTS["right_shoulder"] = {"type":"cone", "axis": [0,0,1], "k": 0.4}
 #JOINT_CONSTRAINTS["left_shoulder"] = {"type": "cone", "axis": [0,0,1], "k": 0.4}
-#JOINT_CONSTRAINTS["spine"] = {"type":"cone", "axis": [0,1,0], "k": np.radians(45)}
-JOINT_CONSTRAINTS["spine_1"] = {"type":"spine", "axis": [0,1,0], "tk1": -np.radians(90), "tk2": np.radians(90), "sk1": -np.radians(0), "sk2": np.radians(0)}
-##OINT_CONSTRAINTS["spine"] = {"type":"shoulder", "axis": [0,1,0], "k": np.radians(20), "k1": np.radians(-90), "k2": np.radians(90) }
-JOINT_CONSTRAINTS["left_shoulder"] = {"type":"shoulder", "axis": [0,0,1], "k": 0.4, "k1": np.radians(-180), "k2": np.radians(180) , "stiffness":0.9}
-JOINT_CONSTRAINTS["right_shoulder"] = {"type":"shoulder", "axis": [0,0,1], "k": 0.4, "k1": np.radians(-180), "k2": np.radians(180), "stiffness":0.9}
+#JOINT_CONSTRAINTS["spine"] = {"type":"cone", "axis": [0,1,0], "k": 45)}
+JOINT_CONSTRAINTS["spine_1"] = {"type":"spine", "axis": [0,1,0], "tk1": -90, "tk2": 90, "sk1": -0, "sk2": 0}
+##OINT_CONSTRAINTS["spine"] = {"type":"shoulder", "axis": [0,1,0], "k": 20), "k1": -90), "k2": 90) }
+JOINT_CONSTRAINTS["left_shoulder"] = {"type":"shoulder", "axis": [0,0,1], "k": 0.4, "k1": -180, "k2": 180 , "stiffness":0.9}
+JOINT_CONSTRAINTS["right_shoulder"] = {"type":"shoulder", "axis": [0,0,1], "k": 0.4, "k1": -180, "k2": 180, "stiffness":0.9}
 
-JOINT_CONSTRAINTS["left_wrist"] = {"type":"cone", "axis": [0,0,1], "k": np.radians(90)}
-JOINT_CONSTRAINTS["right_wrist"] = {"type":"cone", "axis": [0,0,1], "k": np.radians(90)}
-#JOINT_CONSTRAINTS["head"] = {"type":"cone", "axis": [0,1,0], "k": np.radians(0)}
-#JOINT_CONSTRAINTS["neck"] = {"type":"head", "axis": [0,1,0], "k1": -np.radians(65), "k2": np.radians(65)}
-JOINT_CONSTRAINTS["head"] = {"type":"head", "axis": [0,1,0], "tk1": -np.radians(85), "tk2": np.radians(85), "sk1": -np.radians(45), "sk2": np.radians(45)}
+JOINT_CONSTRAINTS["left_wrist"] = {"type":"cone", "axis": [0,0,1], "k": 90}
+JOINT_CONSTRAINTS["right_wrist"] = {"type":"cone", "axis": [0,0,1], "k": 90}
+#JOINT_CONSTRAINTS["head"] = {"type":"cone", "axis": [0,1,0], "k": 0)}
+#JOINT_CONSTRAINTS["neck"] = {"type":"head", "axis": [0,1,0], "k1": -65), "k2": 65)}
+JOINT_CONSTRAINTS["head"] = {"type":"head", "axis": [0,1,0], "tk1": -85, "tk2": 85, "sk1": -45, "sk2": 45}
 JOINT_CONSTRAINTS["left_hold_point"] = {"type":"static"}
 JOINT_CONSTRAINTS["right_hold_point"] = {"type":"static"}
 
