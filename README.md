@@ -2,8 +2,12 @@
 
 Utility functions and data structures for skeleton animations loaded from BVH and ASF/AMC files. The library provides functions for inverse kinematics and retargeting. The main dependency, in addition to NumPy, SciPy and Matplotlib, is the transformations library by Christoph Gohlke https://www.lfd.uci.edu/~gohlke/.
 
- 
-This module is supposed to be loaded as a submodule in an experiment or tool environment.
+## Installation
+
+```bat
+pip install .
+```
+
 
 ## Example 
 
