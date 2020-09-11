@@ -1,0 +1,1252 @@
+{
+"model": {
+        "ik_chains": {
+            "R_foot_jnt": {
+                "end_effector_dir": [
+                    0,
+                    0,
+                    1
+                ],
+                "root": "R_upLeg_jnt",
+                "joint_axis": [
+                    1,
+                    0,
+                    0
+                ],
+                "joint": "R_lowLeg_jnt"
+            },
+            "R_hand_jnt": {
+                "end_effector_dir": [
+                    1,
+                    0,
+                    0
+                ],
+                "root": "R_upArm_jnt",
+                "joint_axis": [
+                    1,
+                    0,
+                    0
+                ],
+                "joint": "R_lowArm_jnt"
+            },
+            "L_foot_jnt": {
+                "end_effector_dir": [
+                    0,
+                    0,
+                    1
+                ],
+                "root": "L_upLeg_jnt",
+                "joint_axis": [
+                    1,
+                    0,
+                    0
+                ],
+                "joint": "L_lowLeg_jnt"
+            },
+            "L_hand_jnt": {
+                "end_effector_dir": [
+                    1,
+                    0,
+                    0
+                ],
+                "root": "L_upArm_jnt",
+                "joint_axis": [
+                    1,
+                    0,
+                    0
+                ],
+                "joint": "L_lowArm_jnt"
+            }
+        },
+        "flip_x_axis": true,
+        "cos_map": {
+            "R_thumb_mid_jnt": {
+                "x": [
+                    -1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_thumb_end_jnt": {
+                "x": [
+                    1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_index_end_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_thumb_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_thumb_end_jnt": {
+                "x": [
+                    -1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_thumb_mid_jnt": {
+                "x": [
+                    1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_middle_mid_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_lowLeg_jnt": {
+                "x": [
+                    0,
+                    0,
+                    1
+                ],
+                "y": [
+                    1,
+                    0,
+                    0
+                ]
+            },
+            "L_shoulderEnd_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_foot_jnt": {
+                "x": [
+                    -0.04916656909667465,
+                    0.013524397716600961,
+                    0.9986990233046517
+                ],
+                "y": [
+                    0.858105164666912,
+                    -0.5111146396408871,
+                    0.049166569096674655
+                ]
+            },
+            "R_index_end_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_middle_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_lowLeg_jnt": {
+                "x": [
+                    0,
+                    0,
+                    1
+                ],
+                "y": [
+                    1,
+                    0,
+                    0
+                ]
+            },
+            "FK_back1_jnt": {
+                "x": [
+                    1.0,
+                    2.3522798489214985e-33,
+                    1.45249492369039e-49
+                ],
+                "y": [
+                    -2.3522798489214985e-33,
+                    1.0,
+                    1.234967790381189e-16
+                ]
+            },
+            "R_index_root_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_upArm_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_index_base_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_ring_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_index_base_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_index_tip_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_ring_base_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_shoulderEnd_jnt": {
+                "x": null,
+                "y": null
+            },
+            "R_ring_tip_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_middle_base_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_middle_tip_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "FK_back2_jnt": {
+                "x": [
+                    1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    1,
+                    0
+                ]
+            },
+            "L_ring_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_shoulderEnd_jnt": {
+                "x": null,
+                "y": null
+            },
+            "R_hand_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_handRoot_jnt": {
+                "x": [
+                    0.8672573624576275,
+                    -0.12125727409913434,
+                    0.4828678294741603
+                ],
+                "y": [
+                    -0.4828678294741603,
+                    -0.44108839357295654,
+                    0.7564916974522206
+                ]
+            },
+            "L_toe_tip_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_shoulderEnd_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_ring_mid_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_ring_end_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "head_end_jnt": {
+                "x": null,
+                "y": null
+            },
+            "R_upLeg_jnt": {
+                "x": [
+                    0,
+                    0,
+                    1
+                ],
+                "y": [
+                    1,
+                    0,
+                    0
+                ]
+            },
+            "L_pinky_tip_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_toe_tip_jnt": {
+                "x": null,
+                "y": null
+            },
+            "R_thumb_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_pinky_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_hand_end_jnt": {
+                "x": null,
+                "y": null
+            },
+            "L_middle_root_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_ring_mid_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_middle_end_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_index_tip_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_pinky_mid_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "head_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_pinky_mid_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_thumb_tip_jnt": {
+                "x": [
+                    -1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_pinky_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_toe_jnt": {
+                "x": [
+                    0.0,
+                    2.2204460492503126e-16,
+                    1.0
+                ],
+                "y": [
+                    1.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "L_toe_tip_jnt": {
+                "x": null,
+                "y": null
+            },
+            "R_index_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_toe_tip_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "FK_back4_jnt": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    0.8989236962087518,
+                    0.4381052252534724
+                ]
+            },
+            "R_lowArm_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "FK_back3_jnt": {
+                "x": [
+                    1.0,
+                    -2.814222537228337e-09,
+                    -1.237967020496937e-10
+                ],
+                "y": [
+                    2.8142225372283374e-09,
+                    0.9961372937200527,
+                    0.08780940758306961
+                ]
+            },
+            "L_middle_base_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "head_jnt": {
+                "x": [
+                    -0.0025466471219186696,
+                    -0.10157300689052548,
+                    -0.9948248282283941
+                ],
+                "y": [
+                    0.998746821970401,
+                    -0.049982999034277886,
+                    0.0025466471219190933
+                ]
+            },
+            "R_handRoot_jnt": {
+                "x": [
+                    0.8672662667575435,
+                    -0.1212552512030848,
+                    0.48285234451135284
+                ],
+                "y": [
+                    0.48285234451135284,
+                    0.4410964786229273,
+                    -0.7564968671094041
+                ]
+            },
+            "L_index_root_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_thumb_base_jnt": {
+                "x": [
+                    -1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_index_mid_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_thumb_tip_jnt": {
+                "x": [
+                    1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_hand_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_thumb_base_jnt": {
+                "x": [
+                    1,
+                    0,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_upLeg_jnt": {
+                "x": [
+                    0,
+                    0,
+                    1
+                ],
+                "y": [
+                    1,
+                    0,
+                    0
+                ]
+            },
+            "L_pinky_root_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_middle_mid_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_pinky_base_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_index_mid_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_foot_jnt": {
+                "x": [
+                    0.006396120084833674,
+                    -0.0017936742410152745,
+                    0.9999779359468776
+                ],
+                "y": [
+                    0.8541630548357705,
+                    -0.5199659271543519,
+                    -0.006396120084833673
+                ]
+            },
+            "R_middle_root_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_ring_base_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_upArm_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_middle_end_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_hand_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_shoulder_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_ring_end_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_hand_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_hand_end_jnt": {
+                "x": null,
+                "y": null
+            },
+            "R_ring_root_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_middle_tip_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_middle_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "L_ring_root_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_toe_jnt": {
+                "x": [
+                    0.0,
+                    2.2204460492503126e-16,
+                    1.0
+                ],
+                "y": [
+                    1.0,
+                    0.0,
+                    0.0
+                ]
+            },
+            "R_pinky_root_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_shoulder_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_index_end_jnt_EndSite": {
+                "x": [
+                    1.0,
+                    0.0,
+                    0.0
+                ],
+                "y": [
+                    0.0,
+                    1.0,
+                    0.0
+                ]
+            },
+            "R_pinky_base_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_lowArm_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "R_pinky_end_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "R_pinky_tip_jnt": {
+                "x": [
+                    0,
+                    -1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    -1
+                ]
+            },
+            "L_pinky_end_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            },
+            "L_ring_tip_jnt": {
+                "x": [
+                    0,
+                    1,
+                    0
+                ],
+                "y": [
+                    0,
+                    0,
+                    1
+                ]
+            }
+        },
+        "free_joints_map": {
+            "R_hand_jnt_hold_point": [
+                "FK_back2_jnt",
+                "R_upArm_jnt",
+                "R_lowArm_jnt"
+            ],
+            "L_hand_jnt_hold_point": [
+                "FK_back2_jnt",
+                "L_upArm_jnt",
+                "L_lowArm_jnt"
+            ]
+        },
+        "foot_joints": [],
+        "joint_constraints": {},
+        "name": "custom",
+        "heel_offset": [
+            0,
+            -6.480602,
+            0
+        ],
+        "relative_head_dir": [
+            0.0,
+            -1.0,
+            0.0
+        ],
+        "aligning_root_node": "FK_back1_jnt",
+        "joints": {
+            "left_wrist": "L_hand_jnt",
+            "pelvis": "FK_back1_jnt",
+            "right_ring_finger_root": "R_ring_base_jnt",
+            "left_ring_finger_tip": "L_ring_tip_jnt",
+            "right_elbow": "R_lowArm_jnt",
+            "right_heel": null,
+            "left_pinky_finger_tip": "L_pinky_tip_jnt",
+            "right_pinky_finger_mid": "R_pinky_mid_jnt",
+            "left_ring_finger_base": "L_ring_root_jnt",
+            "right_shoulder": "R_upArm_jnt",
+            "right_middle_finger_tip": "R_middle_tip_jnt",
+            "left_thumb_end": "L_thumb_end_jnt",
+            "right_pinky_finger_root": "R_pinky_root_jnt",
+            "left_pinky_finger_base": "L_pinky_base_jnt",
+            "right_thumb_base": "R_thumb_base_jnt",
+            "right_index_finger_root": "R_index_root_jnt",
+            "spine": "FK_back2_jnt",
+            "right_ring_finger_mid": "R_ring_mid_jnt",
+            "right_ring_finger_tip": "R_ring_tip_jnt",
+            "left_index_finger_root": "L_index_root_jnt",
+            "right_middle_finger_root": "R_middle_root_jnt",
+            "right_ring_finger_end": "R_ring_end_jnt",
+            "left_middle_finger_tip": "L_middle_tip_jnt",
+            "right_ring_finger_base": "R_ring_root_jnt",
+            "right_pinky_finger_end": "R_pinky_end_jnt",
+            "left_middle_finger_base": "L_middle_base_jnt",
+            "left_ring_finger_mid": "L_ring_mid_jnt",
+            "left_clavicle": "L_shoulder_jnt",
+            "right_hip": "R_upLeg_jnt",
+            "right_toe": "R_toe_jnt",
+            "left_shoulder": "L_upArm_jnt",
+            "right_hold_point": "R_hand_jnt_hold_point",
+            "right_knee": "R_lowLeg_jnt",
+            "left_heel": null,
+            "right_middle_finger_mid": "R_middle_mid_jnt",
+            "left_thumb_base": "L_thumb_base_jnt",
+            "left_middle_finger_root": "L_middle_root_jnt",
+            "right_thumb_tip": "R_thumb_tip_jnt",
+            "left_hold_point": "L_hand_jnt_hold_point",
+            "left_pinky_finger_mid": "L_pinky_mid_jnt",
+            "left_ankle": "L_foot_jnt",
+            "left_pinky_finger_end": "L_pinky_end_jnt",
+            "right_pinky_finger_base": "R_pinky_base_jnt",
+            "left_ring_finger_root": "L_ring_base_jnt",
+            "right_clavicle": "R_shoulder_jnt",
+            "left_knee": "L_lowLeg_jnt",
+            "right_thumb_end": "R_thumb_end_jnt",
+            "left_index_finger_mid": "L_index_mid_jnt",
+            "left_middle_finger_end": "L_middle_end_jnt",
+            "left_ring_finger_end": "L_ring_end_jnt",
+            "left_elbow": "L_lowArm_jnt",
+            "left_toe": "L_toe_jnt",
+            "right_wrist": "R_hand_jnt",
+            "neck": "FK_back4_jnt",
+            "right_index_finger_base": "R_index_base_jnt",
+            "right_index_finger_tip": "R_index_tip_jnt",
+            "left_hip": "L_upLeg_jnt",
+            "right_middle_finger_base": "R_middle_base_jnt",
+            "left_pinky_finger_root": "L_pinky_root_jnt",
+            "left_middle_finger_mid": "L_middle_mid_jnt",
+            "right_pinky_finger_tip": "R_pinky_tip_jnt",
+            "right_ankle": "R_foot_jnt",
+            "left_thumb_mid": "L_thumb_mid_jnt",
+            "left_index_finger_base": "L_index_base_jnt",
+            "head": "head_jnt",
+            "spine_1": "FK_back3_jnt",
+            "right_thumb_mid": "R_thumb_mid_jnt",
+            "left_index_finger_tip": "L_index_tip_jnt",
+            "left_index_finger_end": "L_index_end_jnt",
+            "right_index_finger_mid": "R_index_mid_jnt",
+            "root": null,
+            "right_middle_finger_end": "R_middle_end_jnt",
+            "right_index_finger_end": "R_index_end_jnt",
+            "left_thumb_tip": "L_thumb_tip_jnt"
+        }
+    },
+    "name": "custom"
+}
