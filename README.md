@@ -4,8 +4,9 @@ Utility functions and data structures for skeleton animations loaded from BVH an
 
 ## Installation
 
+Clone the repository and install the package with editable flag.
 ```bat
-pip install .
+pip install -e .
 ```
 
 
@@ -27,6 +28,9 @@ for frame in mv.frames:
      point_clouds.append(point_cloud)  
 
 ```
+
+A retargeting script can be found in the example directory.
+
 ## Developers
 
 Erik Herrmann<sup>1</sup>, Han Du<sup>1</sup>, Martin Manns<sup>2</sup>, Markus Mauer<sup>2</sup>
