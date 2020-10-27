@@ -22,7 +22,7 @@ setup(
     url="https://github.com/eherr/anim_utils",
     author="DFKI GmbH",
     license='MIT',
-    keywords="skeleton animation retargeting",
+    keywords="skeleton animation data retargeting",
     packages=find_packages(exclude=("examples",)),
     python_requires=">=3.5.*, <4",
     install_requires=requirements,
