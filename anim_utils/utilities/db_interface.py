@@ -423,7 +423,7 @@ def retarget_motion_in_db(db_url, retargeting, motion_id, motion_name, collectio
 
 
 def authenticate(url, user, pw):
-    data = {"username": user, "password": pw}
+    data = {"name": user, "password": pw}
     result_str = call_rest_interface(url, "authenticate", data)
     try:
         result_data = json.loads(result_str)
