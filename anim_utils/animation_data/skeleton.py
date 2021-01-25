@@ -30,7 +30,7 @@ import collections
 from copy import copy
 import json
 import numpy as np
-from transformations import quaternion_matrix
+from transformations import quaternion_matrix, quaternion_from_matrix
 from .skeleton_node import SkeletonEndSiteNode
 from .constants import ROTATION_TYPE_QUATERNION, ROTATION_TYPE_EULER, LEN_EULER, LEN_ROOT_POS, LEN_QUAT
 from ..motion_editing.coordinate_cyclic_descent import run_ccd, normalize, set_global_orientation, run_ccd_look_at, orient_node_to_target_look_at, LOOK_AT_DIR, SPINE_LOOK_AT_DIR, orient_node_to_target_look_at_projected
