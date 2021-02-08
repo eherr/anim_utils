@@ -71,7 +71,7 @@ class NumericalInverseKinematicsQuat(object):
                 "Start optimization for joint " + constraint.joint_name + " " + str(len(initial_guess))
                 + " " + str(len(free_joints)) + " " + str(p), LOG_MODE_DEBUG)
         cons = None
-        #start = time.clock()
+        #start = time.time()
         error = np.inf
         iter_counter = 0
         result = None
@@ -79,7 +79,7 @@ class NumericalInverseKinematicsQuat(object):
             result = self._run_optimization(constraint.evaluate, initial_guess, data, cons)
             error = constraint.evaluate(result["x"], data)
             iter_counter += 1
-        # write_log("finished optimization in",time.clock()-start,"seconds with error", error)#,result["x"].tolist(), initial_guess.tolist()
+        # write_log("finished optimization in",time.time()-start,"seconds with error", error)#,result["x"].tolist(), initial_guess.tolist()
         if result is not None:
             self.pose.set_channel_values(result["x"], free_joints)
         return error
@@ -106,13 +106,13 @@ class NumericalInverseKinematicsQuat(object):
         if self.verbose:
             write_message_to_log("Start optimization for joint " + target_joint + " " +  str(len(initial_guess))
                                  + " " + str(len(free_joints)), LOG_MODE_DEBUG)
-        start = time.clock()
+        start = time.time()
         cons = None#self.pose.generate_constraints(free_joints)
         result = self._run_optimization(obj_inverse_kinematics, initial_guess, data, cons)
         position = self.pose.evaluate_position(target_joint)
         error = np.linalg.norm(position-target_position)
         if self.verbose:
-            write_message_to_log("Finished optimization in " + str(time.clock()-start) + " seconds with error " + str(error), LOG_MODE_DEBUG) #,result["x"].tolist(), initial_guess.tolist()
+            write_message_to_log("Finished optimization in " + str(time.time()-start) + " seconds with error " + str(error), LOG_MODE_DEBUG) #,result["x"].tolist(), initial_guess.tolist()
         self.pose.set_channel_values(result["x"], free_joints)
         return error
 
