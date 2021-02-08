@@ -27,6 +27,8 @@ Created on Mon Jun 20 2017
 """
 import numpy as np
 import json
+import bz2
+import base64
 import requests
 import collections
 import bson
@@ -66,6 +68,7 @@ def get_motion_by_id_from_remote_db(url, clip_id, is_processed=False, session=No
     print("get motion", data)
     result_str = call_bson_rest_interface(url, "get_motion", data)
     try:
+        result_str = bz2.decompress(result_str)
         result_data = bson.loads(result_str)
     except:
         print("exception")
@@ -106,8 +109,6 @@ N_MAX_SIZE = 200000#00000
 
 
 def split(motion_data):
-    if type(motion_data) == dict:
-        motion_data = json.dumps(motion_data)
     segments = []
     n_segments = (len(motion_data) // N_MAX_SIZE)  +1
     offset = 0
@@ -118,6 +119,10 @@ def split(motion_data):
 
 
 def upload_motion_to_db(url, name, motion_data, collection, skeleton_name, meta_data, is_processed=False, session=None):
+    if type(motion_data) == dict:
+        motion_data = bson.dumps(motion_data)
+    motion_data = bz2.compress(motion_data)
+    motion_data = base64.b64encode(motion_data).decode()
     parts = split(motion_data)
     for idx, part in enumerate(parts):
         #part_data = bytearray(part, "utf-8")
