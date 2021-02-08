@@ -258,8 +258,8 @@ class MotionVector(object):
     def to_db_format(self, scale=1.0, animated_joints=None):
         """ Converts the frames into a custom json format for use in a Unity client"""
         if animated_joints is None:
-            animated_joints = [j for j, n in list(self.skeleton.nodes.items()) if
-                               "EndSite" not in j and len(n.children) > 0]  # self.animated_joints
+            animated_joints = [j for j, n in self.skeleton.nodes.items() if
+                               n.children is not None and len(n.children) > 0]  # self.animated_joints
         poses = []
         for frame in self.frames:
             pose = self._convert_frame_to_db_format(frame, animated_joints, scale)
