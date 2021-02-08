@@ -448,3 +448,13 @@ def start_cluster_job(url, imagename, job_name, job_desc, resources, session=Non
     except:
         result_data = None
     return result_data
+
+
+def get_motion_list_by_name(url, name, exact_match):
+    data = {"name": name, "exact_match": exact_match}
+    result_str = call_rest_interface(url, "get_motion_list_by_name", data)
+    try:
+        result_data = json.loads(result_str)
+    except:
+        result_data = None
+    return result_data
