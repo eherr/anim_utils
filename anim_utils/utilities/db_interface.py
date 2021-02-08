@@ -68,7 +68,9 @@ def get_motion_by_id_from_remote_db(url, clip_id, is_processed=False, session=No
     print("get motion", data)
     result_str = call_bson_rest_interface(url, "get_motion", data)
     try:
+        print("compressed",len(result_str))
         result_str = bz2.decompress(result_str)
+        print("decompressed",len(result_str))
         result_data = bson.loads(result_str)
     except:
         print("exception")
@@ -428,7 +430,7 @@ def retarget_motion_in_db(db_url, retargeting, motion_id, motion_name, collectio
 
 
 def authenticate(url, user, pw):
-    data = {"name": user, "password": pw}
+    data = {"username": user, "password": pw}
     result_str = call_rest_interface(url, "authenticate", data)
     try:
         result_data = json.loads(result_str)
