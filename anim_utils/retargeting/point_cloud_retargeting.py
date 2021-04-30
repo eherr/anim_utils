@@ -447,11 +447,13 @@ class PointCloudRetargeting(object):
         for target_name in self.target_skeleton.animated_joints:
             q = self.ref_rotation[target_name]
             src_cos = None
-            if target_name in self.target_to_src_joint_map:
-                src_name = self.target_to_src_joint_map[target_name]
+            default_name = None
+            if target_name in joint_map:
                 default_name = joint_map[target_name]
-                if default_name in self.src_model["cos_defs"]:
-                    src_cos = self.get_src_cos_from_multiple_points(src_frame, self.src_model["cos_defs"][default_name])
+            if default_name in self.src_model["cos_defs"]:
+                src_cos = self.get_src_cos_from_multiple_points(src_frame, self.src_model["cos_defs"][default_name])
+            elif target_name in self.target_to_src_joint_map:
+                src_name = self.target_to_src_joint_map[target_name]
                 if src_name is not None and src_name in self.src_joints:
                     src_cos = self.get_src_cos_from_joint_map(src_name, target_name, src_frame)
             if src_cos is not None and src_cos[1] is not None:
