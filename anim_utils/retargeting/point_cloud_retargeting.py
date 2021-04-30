@@ -139,7 +139,6 @@ def align_axis_in_place(axes, key, new_vec):
     return q, aligned_axes
 
 
-
 def to_local_cos_fast(skeleton, node_name, frame, q):
     # bring into parent coordinate system
     pm = np.array(skeleton.nodes[node_name].get_global_matrix(frame, use_cache=True)[:3,:3])
@@ -254,7 +253,7 @@ def find_rotation_analytically_with_guess(new_skeleton, free_joint_name, target,
 def get_parent_map(joints):
     """Returns a dict of node names to their parent node's name"""
     parent_dict = dict()
-    for joint_name in list(joints.keys()):
+    for joint_name in joints.keys():
         parent_dict[joint_name] = joints[joint_name]['parent']
     return parent_dict
 
@@ -262,7 +261,7 @@ def get_parent_map(joints):
 def get_children_map(joints):
     """Returns a dict of node names to a list of children names"""
     child_dict = dict()
-    for joint_name in list(joints.keys()):
+    for joint_name in joints.keys():
         parent_name = joints[joint_name]['parent']
         if parent_name not in child_dict:
             child_dict[parent_name] = list()
@@ -285,7 +284,7 @@ def swing_twist_decomposition(q, twist_axis):
 
 
 class PointCloudRetargeting(object):
-    def __init__(self, src_joints, src_model, target_skeleton, target_to_src_joint_map, scale_factor=1.0, additional_rotation_map=None, constant_offset=None, place_on_ground=False, ground_height=0):
+    def __init__(self, src_joints, src_model, target_skeleton, target_to_src_joint_map, scale_factor=1.0, additional_rotation=None, constant_offset=None, place_on_ground=False, ground_height=0):
         self.src_joints = src_joints
         self.src_model = src_model
         self.target_skeleton = target_skeleton
@@ -304,7 +303,7 @@ class PointCloudRetargeting(object):
         self.scale_factor = scale_factor
         self.n_params = len(self.target_skeleton.animated_joints) * 4 + 3
         self.ground_height = ground_height
-        self.additional_rotation_map = additional_rotation_map
+        self.additional_rotation = additional_rotation
         self.src_inv_joint_map = dict((v,k) for k, v in src_model["joints"].items())
         self.src_child_map = dict()
         self.src_parent_map = get_parent_map(src_joints)
@@ -323,12 +322,13 @@ class PointCloudRetargeting(object):
         for j in ["neck", "spine_2", "spine_1", "spine"]:
             if j in src_joint_map:
                 self.src_parent_map["spine_03"] = "pelvis"
-        self.src_child_map[src_joint_map["pelvis"]] = src_joint_map["neck"]#"pelvis" "neck_01"
+        #self.src_child_map[src_joint_map["pelvis"]] = [ "left_eye", "right_eye", "left_ear", "right_ear"]#src_joint_map["neck"]#"pelvis" "neck_01"
 
         self.constant_offset = constant_offset
         self.place_on_ground = place_on_ground
-        self.temp_frame_data = dict()
-
+        self.current_frame_data = dict()
+        self.prev_frame_data = dict()
+        self.frame_idx = 0
         self.target_cos_map = create_local_cos_map_from_skeleton_axes_with_map(self.target_skeleton)
         if "cos_map" in target_skeleton.skeleton_model:
             self.target_cos_map.update(target_skeleton.skeleton_model["cos_map"])
@@ -361,9 +361,12 @@ class PointCloudRetargeting(object):
     def estimate_src_joint_cos(self, src_name, child_name, target_name, src_frame):
         joint_idx = self.src_joints[src_name]["index"]
         child_idx = self.src_joints[child_name]["index"]
-        global_src_up_vec = src_frame[child_idx] - src_frame[joint_idx]
+        if isinstance(child_idx, list):
+            child_pos = np.mean([src_frame[idx] for idx in child_idx])
+        else:
+            child_pos = src_frame[joint_idx]
+        global_src_up_vec = src_frame[child_idx] - child_pos
         global_src_up_vec /= np.linalg.norm(global_src_up_vec)
-        self.temp_frame_data[src_name] = global_src_up_vec
         if target_name == self.target_skeleton.skeleton_model["joints"]["pelvis"]:
             global_src_x_vec = src_frame[self.left_hip_idx] - src_frame[self.right_hip_idx]
             global_src_x_vec /= np.linalg.norm(global_src_x_vec)
@@ -375,60 +378,104 @@ class PointCloudRetargeting(object):
             child_child_idx = self.src_joints[child_child_name]["index"]
             child_global_src_up_vec = src_frame[child_child_idx] - src_frame[child_idx]
             child_global_src_up_vec /= np.linalg.norm(child_global_src_up_vec)
-            global_src_x_vec = np.cross(global_src_up_vec, child_global_src_up_vec)
-            global_src_x_vec /= np.linalg.norm(global_src_x_vec)
+            angle = abs(math.acos(np.dot(global_src_up_vec, child_global_src_up_vec)))
+            if angle < 0.01 and src_name in self.prev_frame_data:#np.linalg.norm(delta) < 0.2
+                print("use stored at ", self.frame_idx,"for",  src_name, "for child")
+                global_src_up_vec = self.prev_frame_data[src_name][0]
+                global_src_x_vec = self.prev_frame_data[src_name][1]
+            else:
+                global_src_x_vec = np.cross(global_src_up_vec, child_global_src_up_vec)
+                norm = np.linalg.norm(global_src_x_vec)
+                global_src_x_vec /= norm
         else:  # find x vector by cross product with parent
             global_src_x_vec = None
             if src_name in self.src_parent_map:
                 parent_joint = self.src_parent_map[src_name]
-                if parent_joint in self.temp_frame_data:
-                    global_parent_up_vector = self.temp_frame_data[parent_joint]
+                if parent_joint in self.current_frame_data:
+                    global_parent_up_vector = self.current_frame_data[parent_joint][0]
                     global_src_x_vec = np.cross(global_src_up_vec, global_parent_up_vector)
-                    global_src_x_vec /= np.linalg.norm(global_src_x_vec)
+                    norm = np.linalg.norm(global_src_x_vec)
+                    global_src_x_vec /= norm
                     if target_name not in self.target_ankle_joints:
                         global_src_x_vec = -global_src_x_vec
         return global_src_up_vec, global_src_x_vec
 
-    def rotate_bone(self, src_name, target_name, src_frame, target_frame, guess, pose_angles=None):
-        q = guess
+    def get_src_cos_from_joint_map(self, src_name, target_name, src_frame):
+        src_cos = None
         if src_name not in self.src_child_map.keys() or self.src_child_map[src_name] is None:
-            return q
+            return src_cos
         if self.src_child_map[src_name] in self.src_to_target_joint_map:#  and or target_name =="neck_01" or target_name.startswith("hand")
             child_name = self.src_child_map[src_name]
             if child_name not in self.src_joints.keys():
-                return q
-            is_root = False
-            if target_name == self.target_skeleton_root:
-                is_root = True
+                return src_cos
             src_cos = self.estimate_src_joint_cos(src_name, child_name, target_name, src_frame)
-            if src_cos[1] is None:
-                return q
-            twist_angle = None
-            if pose_angles is not None and self.target_skeleton.nodes[target_name].parent is not None and target_name in self.twist_angle_joints:
-                joint_idx = self.src_joints[src_name]["index"]
-                twist_angle = pose_angles[joint_idx][0]
-            q = find_rotation_analytically(self.target_skeleton, target_name, src_cos, target_frame, self.target_cos_map, is_root=is_root, twist_angle=twist_angle)
-        return q/np.linalg.norm(q)
+            self.current_frame_data[src_name] = src_cos
+           
+        return src_cos
 
-    def retarget_frame(self, src_frame, ref_frame, pose_angles=None):
 
+    def get_src_cos_from_multiple_points(self, src_frame, cos_def):
+        up_start = np.mean([src_frame[self.src_joints[name]["index"]] for name in cos_def["up_start"]], axis=0)
+        up_end = np.mean([src_frame[self.src_joints[name]["index"]] for name in cos_def["up_end"]], axis=0)
+        global_src_up_vec = up_end - up_start
+        x_start = np.mean([src_frame[self.src_joints[name]["index"]] for name in cos_def["x_start"]], axis=0)
+        x_end = np.mean([src_frame[self.src_joints[name]["index"]] for name in cos_def["x_end"]], axis=0)
+        global_src_x_vec = x_end - x_start
+        global_src_up_vec /= np.linalg.norm(global_src_up_vec)
+        global_src_x_vec /= np.linalg.norm(global_src_x_vec)
+        return global_src_up_vec, global_src_x_vec
+
+
+    def retarget_frame(self, src_frame, prev_frame, pose_angles=None):
+
+        target_joints = self.target_skeleton.skeleton_model["joints"]
+        joint_map = dict()
+        for k, v in target_joints.items():
+            joint_map[v] = k
         self.target_skeleton.clear_cached_global_matrices()
         target_frame = np.zeros(self.n_params)
-        self.temp_frame_data.clear()
+        self.prev_frame_data = self.current_frame_data
+        self.current_frame_data = dict()
+
         # copy the root translation assuming the rocketbox skeleton with static offset on the hips is used as source
-        target_frame[:3] = np.array(src_frame[0]) * self.scale_factor
+        #target_frame[:3] = np.array(src_frame[0]) * self.scale_factor
+        target_frame[:3] = src_frame[self.left_hip_idx] +  (src_frame[self.right_hip_idx] - src_frame[self.left_hip_idx])/2
+        target_frame[:3] *= self.scale_factor
         if self.constant_offset is not None:
             target_frame[:3] += self.constant_offset
-        animated_joints = self.target_skeleton.animated_joints
         target_offset = 3
-        for target_name in animated_joints:
+        for target_name in self.target_skeleton.animated_joints:
             q = self.ref_rotation[target_name]
-            if target_name in self.target_to_src_joint_map.keys():
+            src_cos = None
+            if target_name in self.target_to_src_joint_map:
                 src_name = self.target_to_src_joint_map[target_name]
-                if src_name is not None and src_name in self.src_joints.keys():
-                    q = self.rotate_bone(src_name, target_name, src_frame, target_frame, q, pose_angles)
+                default_name = joint_map[target_name]
+                if default_name in self.src_model["cos_defs"]:
+                    src_cos = self.get_src_cos_from_multiple_points(src_frame, self.src_model["cos_defs"][default_name])
+                if src_name is not None and src_name in self.src_joints:
+                    src_cos = self.get_src_cos_from_joint_map(src_name, target_name, src_frame)
+            if src_cos is not None and src_cos[1] is not None:
+                twist_angle = None
+                if pose_angles is not None and self.target_skeleton.nodes[target_name].parent is not None and target_name in self.twist_angle_joints:
+                    joint_idx = self.src_joints[src_name]["index"]
+                    twist_angle = pose_angles[joint_idx][0]
+                is_root = target_name == self.target_skeleton_root
+                q = find_rotation_analytically(self.target_skeleton, target_name, src_cos, target_frame, self.target_cos_map, is_root=is_root, twist_angle=twist_angle)
+                q = q/np.linalg.norm(q)
+
             #if ref_frame is not None:
             #    q = q if np.dot(ref_frame[target_offset:target_offset + 4], q) >= 0 else -q
+
+            if prev_frame is not None:
+                prev_q = normalize(prev_frame[target_offset:target_offset + 4])
+                if np.dot(q, prev_q) < 0:
+                    q = -q
+                inv_q = normalize(quaternion_inverse(q))
+                delta_q = normalize(quaternion_multiply(inv_q, prev_q))
+                theta = 2 * np.arccos(delta_q[0])
+                if abs(theta) > np.pi:
+                    print("keep", self.frame_idx, theta,src_name, q, prev_q)
+                    q = prev_q
             target_frame[target_offset:target_offset + 4] = q
             target_offset += 4
         return target_frame
@@ -436,18 +483,20 @@ class PointCloudRetargeting(object):
     def run(self, src_frames, frame_range):
         n_frames = len(src_frames)
         target_frames = []
+        self.frame_idx = 0
         if n_frames > 0:
             if frame_range is None:
                 frame_range = (0, n_frames)
-            if self.additional_rotation_map is not None:
-               src_frames = apply_additional_rotation_on_frames(self.src_skeleton.animated_joints, src_frames, self.additional_rotation_map)
+            if self.additional_rotation is not None:
+               src_frames = apply_additional_rotation_on_frames(self.src_skeleton.animated_joints, src_frames, self.additional_rotation)
 
-            ref_frame = None
+            prev_frame = None
             for idx, src_frame in enumerate(src_frames[frame_range[0]:frame_range[1]]):
-                target_frame = self.retarget_frame(src_frame, ref_frame)
-                if ref_frame is None:
-                    ref_frame = target_frame
+                target_frame = self.retarget_frame(src_frame, prev_frame)
+                prev_frame = target_frame
                 target_frames.append(target_frame)
+                self.frame_idx += 1
+                print("--------------")
             target_frames = np.array(target_frames)
             if self.place_on_ground:
                 delta = target_frames[0][1] - self.ground_height
@@ -465,8 +514,9 @@ def generate_joint_map(src_model, target_model):
     return joint_map
 
 
-def retarget_from_point_cloud_to_target(src_joints, src_model, target_skeleton, src_frames, joint_map=None, additional_rotation_map=None, scale_factor=1.0, frame_range=None, place_on_ground=False):
+def retarget_from_point_cloud_to_target(src_joints, src_model, target_skeleton, src_frames, joint_map=None, additional_rotation=None, scale_factor=1.0, frame_range=None, place_on_ground=False):
     if joint_map is None:
         joint_map = generate_joint_map(src_model, target_skeleton.skeleton_model)
-    retargeting = PointCloudRetargeting(src_joints, src_model, target_skeleton, joint_map, scale_factor, additional_rotation_map=additional_rotation_map, place_on_ground=place_on_ground)
+    constant_offset = -np.array(target_skeleton.nodes[target_skeleton.root].offset)
+    retargeting = PointCloudRetargeting(src_joints, src_model, target_skeleton, joint_map, scale_factor, additional_rotation=additional_rotation, place_on_ground=place_on_ground, constant_offset=constant_offset)
     return retargeting.run(src_frames, frame_range)
