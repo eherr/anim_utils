@@ -496,7 +496,6 @@ class PointCloudRetargeting(object):
                 prev_frame = target_frame
                 target_frames.append(target_frame)
                 self.frame_idx += 1
-                print("--------------")
             target_frames = np.array(target_frames)
             if self.place_on_ground:
                 delta = target_frames[0][1] - self.ground_height
