@@ -127,8 +127,10 @@ class Skeleton(object):
         """
         Takes parameters from the reduced frame for each joint of the complete skeleton found in the reduced skeleton
         otherwise it takes parameters from the reference frame
-        :param reduced_frame:
-        :return:
+        Parameters:
+             reduced_frame (np.array): pose parameters ignoring fixed joints.
+        Returns:
+            new_frame (np.array): pose parameters including fixed joints.
         """
         new_frame = np.zeros(self.reference_frame_length)
         joint_index = 0
@@ -152,8 +154,11 @@ class Skeleton(object):
         """
         Takes parameters from the reduced frame for each joint of the complete skeleton found in the reduced skeleton
         otherwise it takes parameters from the reference frame
-        :param reduced_frame:
-        :return:
+        Parameters
+             reduced_frame (np.array): frame ignoring parameters of joints in other_animated_joints.
+             other_animated_joints (List<strings>): names of animated joints.
+        Returns
+            new_frame (np.array): frame including fixed joints.
         """
         new_frame = np.zeros(self.reference_frame_length)
         src_joint_index = 0
@@ -611,3 +616,33 @@ class Skeleton(object):
                 h = SpineConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
                 h.joint_name = skel_j
             self.nodes[skel_j].joint_constraint = h
+
+
+    def get_bounding_box(self, frame=None):
+        """ Calculate axis aligned bounding box.
+            Parameters:
+                frame (np.array): pose parameters for the skeleton.
+            Returns:
+                tuple(min_p, max_p): minimum and maximum points.
+        """
+        if frame is None and self.reference_frame is not None:
+            frame = self.reference_frame
+        else:
+            raise Exception("No frame given and reference_frame is None")
+        min_p = np.ones((3))*np.inf
+        max_p = np.ones((3))*-np.inf
+        for k, n in self.nodes.items():
+            p = n.get_global_position(frame)
+            if p[0] >= max_p[0]:
+                max_p[0] = p[0]
+            elif p[0] < min_p[0]:
+                min_p[0] = p[0]
+            if p[1] >= max_p[1]:
+                max_p[1] = p[1]
+            elif p[1] < min_p[1]:
+                min_p[1] = p[1]
+            if p[2] >= max_p[2]:
+                max_p[2] = p[2]
+            elif p[2] < min_p[2]:
+                min_p[2] = p[2]
+        return min_p, max_p
