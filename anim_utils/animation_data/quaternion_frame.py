@@ -33,15 +33,6 @@ from .utils import rotation_order_to_string
 from .constants import DEFAULT_ROTATION_ORDER
 
 
-def convert_quat_frame_value_to_array(quat_frame_values):
-    n_channels = len(quat_frame_values)
-    quat_frame_value_array = []
-    for item in quat_frame_values:
-        if not isinstance(item, list):
-            item = list(item)
-        quat_frame_value_array += item
-    return quat_frame_value_array
-
 
 def check_quat(test_quat, ref_quat):
     """check locomotion_synthesis_test quat needs to be filpped or not
@@ -98,6 +89,7 @@ def quaternion_to_euler(quat, rotation_order=DEFAULT_ROTATION_ORDER):
     euler_angles = np.rad2deg(euler_from_matrix(rotmat_quat, rotation_order_str))
     return euler_angles
 
+
 def convert_euler_to_quaternion_frame(bvh_reader, e_frame, filter_values=True, animated_joints=None):
     """Convert a BVH frame into an ordered dict of quaternions for each skeleton node
     Parameters
@@ -115,32 +107,38 @@ def convert_euler_to_quaternion_frame(bvh_reader, e_frame, filter_values=True, a
     """
     if animated_joints is None:
         animated_joints = list(bvh_reader.node_names.keys())
-    quat_frame = collections.OrderedDict()
+    n_dims = len(animated_joints)*4
+    quat_frame = np.zeros((n_dims))
+    offset = 0
     for node_name in animated_joints:
         if bvh_reader.get_node_channels(node_name) is not None:
             angles, order = bvh_reader.get_node_angles(node_name, e_frame)
-            quat_frame[node_name] = euler_to_quaternion(angles, order, filter_values)
+            q = euler_to_quaternion(angles, order, filter_values)
+            quat_frame[offset:offset+4] = q
+            offset +=4
     return quat_frame
 
 
-
-def convert_euler_frames_to_quaternion_frames(bvhreader, euler_frames, filter_values=True, animated_joints=None):
+def convert_euler_frames_to_quaternion_frames(bvh_reader, euler_frames, filter_values=True, animated_joints=None):
     """
     :param bvhreader: a BVHReader instance to store skeleton information
     :param euler_frames: a list of euler frames
     :return: a list of quaternion frames
     """
+    if animated_joints is None:
+        animated_joints = list(bvh_reader.node_names.keys())
     quat_frames = []
-    prev_frame_dict = None
+    prev_frame = None
     for e_frame in euler_frames:
-        quat_frame_dict = convert_euler_to_quaternion_frame(bvhreader, e_frame, filter_values, animated_joints=animated_joints)
-        if prev_frame_dict is not None and filter_values:
-            for joint_name in list(quat_frame_dict.keys()):
-                q = check_quat(quat_frame_dict[joint_name], prev_frame_dict[joint_name])
-                quat_frame_dict[joint_name] = q
-        prev_frame_dict = quat_frame_dict
-        q_frame = [e_frame[:3],] + list(quat_frame_dict.values())
-        q_frame = convert_quat_frame_value_to_array(q_frame)
+        q_frame = convert_euler_to_quaternion_frame(bvh_reader, e_frame, filter_values, animated_joints=animated_joints)
+        o = 0
+        if prev_frame is not None and filter_values:
+            for joint_name in animated_joints:
+                q = check_quat(q_frame[o:o+4], prev_frame[o:o+4])
+                q_frame[o:o+4] = q
+                o+=4
+        prev_frame = q_frame
+        q_frame = np.concatenate([e_frame[:3],q_frame])
         quat_frames.append(q_frame)
     return quat_frames
 

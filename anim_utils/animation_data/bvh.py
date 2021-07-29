@@ -325,6 +325,8 @@ class BVHWriter(object):
         self.skeleton = skeleton
         self.frame_data = frame_data
         self.frame_time = frame_time
+        self.joint_order = []
+        self.rotation_info = dict()
         self.is_quaternion = is_quaternion
         if filename is not None:
             self.write(filename)
@@ -342,6 +344,7 @@ class BVHWriter(object):
 
     def generate_bvh_string(self):
         bvh_string = self._generate_hierarchy_string(self.skeleton) + "\n"
+
         if self.is_quaternion:
             #euler_frames = self.convert_quaternion_to_euler_frames_skipping_fixed_joints(self.frame_data, self.is_quaternion)
             euler_frames = self.convert_quaternion_to_euler_frames(self.skeleton, self.frame_data)
@@ -373,11 +376,23 @@ class BVHWriter(object):
         # determine joint type
         if joint_level == 0:
             joint_string += tab_string + "ROOT " + joint + "\n"
+            self.joint_order.append(joint)
         else:
             if len(skeleton.nodes[joint].children) > 0:
                 joint_string += tab_string + "JOINT " + joint + "\n"
+                self.joint_order.append(joint)
             else:
                 joint_string += tab_string + "End Site" + "\n"
+
+        
+        rot_order = []
+        offset = 0
+        for idx, ch in enumerate(skeleton.nodes[joint].channels):
+            if ch.lower().endswith("rotation"):
+                rot_order.append(ch)
+            else:
+                offset += 1
+        self.rotation_info[joint] = rot_order, offset
 
         # open bracket add offset
         joint_string += tab_string + "{" + "\n"
@@ -407,32 +422,26 @@ class BVHWriter(object):
         """ Converts the joint rotations from quaternion to euler rotations
             * quat_frames: array of motion vectors with rotations represented as quaternion
         """
-        joint_names = self.skeleton.get_joint_names()
+        src_joint_order = self.skeleton.get_joint_names()
+        dst_joint_order = self.joint_order
         n_frames = len(quat_frames)
-        n_params = sum([len(skeleton.nodes[j].channels) for j in joint_names])
+        n_params = sum([len(skeleton.nodes[j].channels) for j in dst_joint_order])
         euler_frames = np.zeros((n_frames, n_params))
         for frame_idx, quat_frame in enumerate(quat_frames):
             euler_frames[frame_idx,:TRANSLATION_LEN] = quat_frame[:TRANSLATION_LEN]
-            src = TRANSLATION_LEN
             dst = 0 # the translation offset will be added
-            for joint_name in joint_names:
+            for joint_name in dst_joint_order:
                 channels = skeleton.nodes[joint_name].channels
                 n_channels = len(channels)
-                rotation_order = []
-                rotation_offset = None
-                for idx, ch in enumerate(channels):
-                    if ch.lower().endswith("rotation"):
-                        rotation_order.append(ch)
-                        if rotation_offset is None:
-                            rotation_offset = idx
-
+                rotation_order = self.rotation_info[joint_name][0]
+                rotation_offset = self.rotation_info[joint_name][1]
+                src = skeleton.nodes[joint_name].index * QUAT_LEN + TRANSLATION_LEN
                 q = quat_frame[src:src+QUAT_LEN]
                 e = quaternion_to_euler(q, rotation_order)
                 params_start = dst + rotation_offset
                 params_end = params_start + EULER_LEN
                 euler_frames[frame_idx, params_start:params_end] = e
                 dst += n_channels
-                src += QUAT_LEN
         return euler_frames
 
     def _generate_bvh_frame_string(self,euler_frames, frame_time):

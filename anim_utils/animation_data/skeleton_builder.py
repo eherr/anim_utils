@@ -50,9 +50,7 @@ def create_euler_frame_indices(skeleton):
 
 def read_reference_frame_from_bvh_reader(bvh_reader, frame_index=0):
     quat_frame = convert_euler_to_quaternion_frame(bvh_reader, bvh_reader.frames[frame_index], False, animated_joints=None)
-    quat_frames = list(quat_frame.values())
-    quaternion_frame = np.array(quat_frames).flatten()
-    return np.array(bvh_reader.frames[0][:3].tolist() + quaternion_frame.tolist())
+    return np.array(bvh_reader.frames[0][:3].tolist() + quat_frame.tolist())
 
 
 def add_tool_nodes(skeleton, node_names, new_tool_bones):
