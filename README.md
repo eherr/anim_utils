@@ -4,9 +4,9 @@ Utility functions and data structures for skeleton animations loaded from BVH an
 
 ## Installation
 
-Clone the repository and install the package with editable flag.
+Clone the repository and install the package with editable flag or use the follwing command:
 ```bat
-pip install -e .
+pip install git+https://github.com/eherr/anim_utils
 ```
 
 
