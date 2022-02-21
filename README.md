@@ -25,7 +25,7 @@ for frame in mv.frames:
     for j in skeleton.animated_joints:  
         p = skeleton.nodes[j].get_global_position(frame)  
         point_cloud.append(p)  
-     point_clouds.append(point_cloud)  
+    point_clouds.append(point_cloud)
 
 ```
 
