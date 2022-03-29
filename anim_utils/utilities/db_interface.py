@@ -231,6 +231,17 @@ def get_collections_by_parent_id_from_remote_db(url, parent_id, session=None):
         result_data = None
     return result_data
 
+def get_collections_tree_by_parent_id_from_remote_db(url, parent_id, session=None):
+    data = {"parent_id": parent_id}
+    if session is not None:
+        data.update(session)
+    result_str = call_rest_interface(url, "get_collection_tree", data)
+    try:
+        result_data = json.loads(result_str)
+    except:
+        result_data = None
+    return result_data
+
 def delete_collection_from_remote_db(url, col_id, session=None):
     data = {"id": col_id}
     if session is not None:
