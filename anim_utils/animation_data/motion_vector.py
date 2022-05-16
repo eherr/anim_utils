@@ -207,11 +207,8 @@ class MotionVector(object):
         for idx in range(self.n_frames):
             self.frames[idx][:3] *= scale_factor
 
-    def from_fbx(self, animation, animated_joints=None):
-        if animated_joints is None:
-            animated_joints = list(animation["curves"].keys())
+    def from_fbx(self, animation, animated_joints):
         self.frame_time = animation["frame_time"]
-        print("animated joints", animated_joints)
         root_joint = animated_joints[0]
         self.n_frames = len(animation["curves"][root_joint])
         self.frames = []
@@ -224,14 +221,11 @@ class MotionVector(object):
         frame = np.zeros(n_dims)
         offset = 3
         root_name = animated_joints[0]
-        frame[:3] = animation["curves"][root_name][idx]["local_translation"]
-        print("root translation", frame[:3])
+        frame[:3] = animation["curves"][root_name][idx]["translation"]
         for node_name in animated_joints:
-            if node_name in list(animation["curves"].keys()):
-                rotation = animation["curves"][node_name][idx]["local_rotation"]
+            if node_name in animation["curves"].keys():
+                rotation = animation["curves"][node_name][idx]["rotation"]
                 frame[offset:offset+4] = rotation
-            else:
-                frame[offset:offset+4] = [1, 0, 0, 0]
             offset += 4
 
         return frame

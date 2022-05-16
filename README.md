@@ -8,7 +8,7 @@ Clone the repository and install the package with editable flag or use the follw
 ```bat
 pip install git+https://github.com/eherr/anim_utils
 ```
-
+The optional FBX IO requires the [Python FBX SDK](https://www.autodesk.com/developer-network/platform-technologies/fbx-sdk-2020-3)
 
 ## Example 
 
