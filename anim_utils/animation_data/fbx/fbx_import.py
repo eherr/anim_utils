@@ -135,7 +135,7 @@ class FBXImporter(object):
             end = mLocalTimeSpan.GetStop()
             anim["n_frames"] = end.GetFrameCount(FbxTime.eFrames24) - start.GetFrameCount(FbxTime.eFrames24) + 1
             anim["duration"] = end.GetSecondCount() - start.GetSecondCount()
-            anim["frame_time"] = 0.013889
+            anim["frame_time"] =  anim["duration"]/anim["n_frames"] # 0.013889
             anim["curves"] = collections.OrderedDict()
             print("found animation", anim_name, anim["n_frames"], anim["duration"])
             is_root = True
