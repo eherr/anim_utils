@@ -138,9 +138,15 @@ def get_child_joint(skeleton, inv_joint_map, node_name):
 
 def create_local_cos_map_from_skeleton_axes_with_map(skeleton, flip=1.0, project=True):
     body_x_axis = get_body_x_axis(skeleton)*flip
-    #print("body x axis", body_x_axis)
     body_y_axis = get_body_y_axis(skeleton)
-    #print("body y axis", body_y_axis)
+    if np.dot(body_y_axis, body_x_axis) != 0:
+        body_x_axis = [1,0,0]
+    if np.dot(body_y_axis, body_x_axis) != 0:
+        body_x_axis = [0,1,0]
+    if np.dot(body_y_axis, body_x_axis) != 0:
+        body_x_axis = [0,0,1]
+    print("body x axis", body_x_axis)
+    print("body y axis", body_y_axis)
     inv_joint_map = dict((v,k) for k, v in skeleton.skeleton_model["joints"].items())
     joint_cos_map = dict()
     for j in list(skeleton.nodes.keys()):
@@ -192,7 +198,7 @@ def align_root_joint(axes, global_src_x_vec, max_iter_count=10):
         not_aligned = a_y > 0.1 or a_x > 0.1 and iter_count < max_iter_count
     return q
 
-def align_joint(new_skeleton, free_joint_name, local_target_axes, global_src_up_vec, global_src_x_vec, joint_cos_map, apply_spine_fix=False):
+def align_joint(local_target_axes, global_src_up_vec, global_src_x_vec):
     # first align the twist axis
     q, axes = align_axis(local_target_axes, "y", global_src_up_vec)
     q = normalize(q)
@@ -220,7 +226,7 @@ def find_rotation_analytically(new_skeleton, joint_name, global_src_up_vec, glob
     if joint_name == new_skeleton.root and apply_root_fix:
         q = align_root_joint(local_target_axes, global_src_x_vec, max_iter_count)
     else:
-        q = align_joint(new_skeleton, joint_name, local_target_axes, global_src_up_vec, global_src_x_vec, joint_cos_map)
+        q = align_joint(local_target_axes, global_src_up_vec, global_src_x_vec)
     return to_local_cos(new_skeleton, joint_name, frame, q)
 
         
@@ -383,7 +389,6 @@ class Retargeting(object):
 
 
 def generate_joint_map(src_model, target_model, joint_filter=None):
-    print(target_model.keys())
     joint_map = dict()
     for j in src_model["joints"]:
         if joint_filter is not None and j not in joint_filter:
@@ -398,5 +403,6 @@ def generate_joint_map(src_model, target_model, joint_filter=None):
 def retarget_from_src_to_target(src_skeleton, target_skeleton, src_frames, joint_map=None, additional_rotation_map=None, scale_factor=1.0, frame_range=None, place_on_ground=False, joint_filter=None, force_root_translation=False):
     if joint_map is None:
         joint_map = generate_joint_map(src_skeleton.skeleton_model, target_skeleton.skeleton_model, joint_filter)
+    print('joint map', joint_map)
     retargeting = Retargeting(src_skeleton, target_skeleton, joint_map, scale_factor, additional_rotation_map=additional_rotation_map, place_on_ground=place_on_ground, force_root_translation=force_root_translation)
     return retargeting.run(src_frames, frame_range)
