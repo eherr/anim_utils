@@ -46,8 +46,6 @@ DEFAULT_FRAME_TIME = 0.013889
 DEFAULT_ROTATION_ORDER = ['Xrotation','Yrotation','Zrotation']
 
 
-
-
 class BVHReader(object):
     """Biovision file format class
 
@@ -301,10 +299,163 @@ class BVHReader(object):
                 self.frames[:, ch_indices] = scaled_params
 
 
-class BVHWriter(object):
+def write_euler_frames_to_bvh_file(filename, skeleton, euler_frames, frame_time):
+    """ Write the hierarchy string and the frame parameter string to a file
+    Parameters
+    ----------
+    * filename: String 
+        Name of the created bvh file. 
+    * skeleton: Skeleton
+        Skeleton structure needed to copy the hierarchy
+    * euler_frames: np.ndarray
+        array of pose rotation parameters in euler angles
+    * frame_time: float
+        time in seconds for the display of each keyframe
+    """
+    bvh_string = generate_bvh_string(skeleton, euler_frames, frame_time)
+    if filename[-4:] == '.bvh':
+        filename = filename
+    else:
+        filename = filename + '.bvh'
+    with open(filename, 'w') as outfile:
+        outfile.write(bvh_string)
 
-    """ Saves an input motion defined either as an array of euler or quaternion
-    frame vectors as a BVH file.
+
+def generate_bvh_string(skeleton, euler_frames, frame_time):
+    """ Write the hierarchy string and the frame parameter string to a file
+    Parameters
+    ----------
+    * skeleton: Skeleton
+        Skeleton structure needed to copy the hierarchy
+    * euler_frames: np.ndarray
+        array of pose rotation parameters in euler angles
+    * frame_time: float
+        time in seconds for the display of each keyframe
+    """
+    bvh_string = _generate_hierarchy_string(skeleton) + "\n"
+    bvh_string += _generate_bvh_frame_string(euler_frames, frame_time)
+    return bvh_string
+
+def _generate_hierarchy_string(skeleton):
+    """ Initiates the recursive generation of the skeleton structure string
+        by calling _generate_joint_string with the root joint
+    """
+    hierarchy_string = "HIERARCHY\n"
+    hierarchy_string += _generate_joint_string(skeleton.root, skeleton, 0)
+    return hierarchy_string
+
+def _generate_joint_string(joint, skeleton, joint_level):
+    """ Recursive traversing of the joint hierarchy to create a
+        skeleton structure string in the BVH format
+    """
+    joint_string = ""
+    temp_level = 0
+    tab_string = ""
+    while temp_level < joint_level:
+        tab_string += "\t"
+        temp_level += 1
+
+    # determine joint type
+    if joint_level == 0:
+        joint_string += tab_string + "ROOT " + joint + "\n"
+    else:
+        if len(skeleton.nodes[joint].children) > 0:
+            joint_string += tab_string + "JOINT " + joint + "\n"
+        else:
+            joint_string += tab_string + "End Site" + "\n"
+    # open bracket add offset
+    joint_string += tab_string + "{" + "\n"
+    offset = skeleton.nodes[joint].offset
+    joint_string += tab_string + "\t" + "OFFSET " + "\t " + \
+        str(offset[0]) + "\t " + str(offset[1]) + "\t " + str(offset[2]) + "\n"
+
+    if len(skeleton.nodes[joint].children) > 0:
+        # channel information
+        channels = skeleton.nodes[joint].channels
+        joint_string += tab_string + "\t" + \
+            "CHANNELS " + str(len(channels)) + " "
+        for tok in channels:
+            joint_string += tok + " "
+        joint_string += "\n"
+
+        joint_level += 1
+        # recursive call for all children
+        for child in skeleton.nodes[joint].children:
+            joint_string += _generate_joint_string(child.node_name, skeleton, joint_level)
+
+    # close the bracket
+    joint_string += tab_string + "}" + "\n"
+    return joint_string
+
+def _generate_bvh_frame_string(euler_frames, frame_time):
+    """ Converts a list of euler frames into the BVH file representation.
+        Parameters
+        ----------
+        * euler_frames: np.ndarray
+            array of pose rotation parameters in euler angles
+        * frame_time: float
+            time in seconds for the display of each keyframe
+    """
+    frame_parameter_string = "MOTION\n"
+    frame_parameter_string += "Frames: " + str(len(euler_frames)) + "\n"
+    frame_parameter_string += "Frame Time: " + str(frame_time) + "\n"
+    for frame in euler_frames:
+        frame_parameter_string += ' '.join([str(f) for f in frame])
+        frame_parameter_string += '\n'
+    return frame_parameter_string
+
+
+def convert_quaternion_to_euler_frames(skeleton, quat_frames):
+    """ Converts the joint rotations from quaternion to euler rotations
+    Parameters
+    ----------
+    * skeleton: Skeleton
+        Skeleton structure needed to copy the hierarchy
+    * quat_frames: np.ndarray
+        array of pose rotation parameters as quaternion 
+    """
+    joint_order = []
+    rotation_info = dict()
+    def get_joint_meta_info(joint_name, skeleton):
+        if len(skeleton.nodes[joint_name].children) > 0:
+            joint_order.append(joint_name)
+        rot_order = []
+        offset = 0
+        for idx, ch in enumerate(skeleton.nodes[joint_name].channels):
+            if ch.lower().endswith("rotation"):
+                rot_order.append(ch)
+            else:
+                offset += 1
+        rotation_info[joint_name] = rot_order, offset
+        for child in skeleton.nodes[joint_name].children:
+            get_joint_meta_info(child.node_name, skeleton)
+
+    get_joint_meta_info(skeleton.root, skeleton)
+    n_frames = len(quat_frames)
+    n_params = sum([len(skeleton.nodes[j].channels) for j in joint_order])
+    euler_frames = np.zeros((n_frames, n_params))
+    for frame_idx, quat_frame in enumerate(quat_frames):
+        euler_frames[frame_idx,:TRANSLATION_LEN] = quat_frame[:TRANSLATION_LEN]
+        dst = 0 # the translation offset will be added
+        for joint_name in joint_order:
+            channels = skeleton.nodes[joint_name].channels
+            n_channels = len(channels)
+            rotation_order = rotation_info[joint_name][0]
+            rotation_offset = rotation_info[joint_name][1]
+            src = skeleton.nodes[joint_name].index * QUAT_LEN + TRANSLATION_LEN
+            q = quat_frame[src:src+QUAT_LEN]
+            e = quaternion_to_euler(q, rotation_order)
+            params_start = dst + rotation_offset
+            params_end = params_start + EULER_LEN
+            euler_frames[frame_idx, params_start:params_end] = e
+            dst += n_channels
+    return euler_frames
+
+
+class BVHWriter(object):
+    """Saves an input motion defined either as an array of euler or quaternion
+    frame vectors to a BVH file.
+    Legacy interface that calls: write_euler_frames_to_bvh_file
 
     Parameters
     ----------
@@ -313,241 +464,20 @@ class BVHWriter(object):
     * skeleton: Skeleton
         Skeleton structure needed to copy the hierarchy
     * frame_data: np.ndarray
-        array of motion vectors, either with euler or quaternion as
-        rotation parameters
+        array of motion vectors, either with euler or quaternion as rotation parameters
     * frame_time: float
         time in seconds for the display of each keyframe
     * is_quaternion: Boolean
         Defines wether the frame_data is quaternion data or euler data
     """
-
     def __init__(self, filename, skeleton, frame_data, frame_time, is_quaternion=False):
         self.skeleton = skeleton
         self.frame_data = frame_data
         self.frame_time = frame_time
-        self.joint_order = []
-        self.rotation_info = dict()
-        self.is_quaternion = is_quaternion
+        if is_quaternion:
+            self.frame_data = convert_quaternion_to_euler_frames(self.skeleton, self.frame_data)
         if filename is not None:
             self.write(filename)
 
     def write(self, filename):
-        """ Write the hierarchy string and the frame parameter string to file
-        """
-        bvh_string = self.generate_bvh_string()
-        if filename[-4:] == '.bvh':
-            filename = filename
-        else:
-            filename = filename + '.bvh'
-        with open(filename, 'w') as outfile:
-            outfile.write(bvh_string)
-
-    def generate_bvh_string(self):
-        bvh_string = self._generate_hierarchy_string(self.skeleton) + "\n"
-
-        if self.is_quaternion:
-            #euler_frames = self.convert_quaternion_to_euler_frames_skipping_fixed_joints(self.frame_data, self.is_quaternion)
-            euler_frames = self.convert_quaternion_to_euler_frames(self.skeleton, self.frame_data)
-
-        else:
-            euler_frames = self.frame_data
-        bvh_string += self._generate_bvh_frame_string(euler_frames, self.frame_time)
-        return bvh_string
-
-    def _generate_hierarchy_string(self, skeleton):
-        """ Initiates the recursive generation of the skeleton structure string
-            by calling _generate_joint_string with the root joint
-        """
-        hierarchy_string = "HIERARCHY\n"
-        hierarchy_string += self._generate_joint_string(skeleton.root, skeleton, 0)
-        return hierarchy_string
-
-    def _generate_joint_string(self, joint, skeleton, joint_level):
-        """ Recursive traversing of the joint hierarchy to create a
-            skeleton structure string in the BVH format
-        """
-        joint_string = ""
-        temp_level = 0
-        tab_string = ""
-        while temp_level < joint_level:
-            tab_string += "\t"
-            temp_level += 1
-
-        # determine joint type
-        if joint_level == 0:
-            joint_string += tab_string + "ROOT " + joint + "\n"
-            self.joint_order.append(joint)
-        else:
-            if len(skeleton.nodes[joint].children) > 0:
-                joint_string += tab_string + "JOINT " + joint + "\n"
-                self.joint_order.append(joint)
-            else:
-                joint_string += tab_string + "End Site" + "\n"
-
-        
-        rot_order = []
-        offset = 0
-        for idx, ch in enumerate(skeleton.nodes[joint].channels):
-            if ch.lower().endswith("rotation"):
-                rot_order.append(ch)
-            else:
-                offset += 1
-        self.rotation_info[joint] = rot_order, offset
-
-        # open bracket add offset
-        joint_string += tab_string + "{" + "\n"
-        offset = skeleton.nodes[joint].offset
-        joint_string += tab_string + "\t" + "OFFSET " + "\t " + \
-            str(offset[0]) + "\t " + str(offset[1]) + "\t " + str(offset[2]) + "\n"
-
-        if len(skeleton.nodes[joint].children) > 0:
-            # channel information
-            channels = skeleton.nodes[joint].channels
-            joint_string += tab_string + "\t" + \
-                "CHANNELS " + str(len(channels)) + " "
-            for tok in channels:
-                joint_string += tok + " "
-            joint_string += "\n"
-
-            joint_level += 1
-            # recursive call for all children
-            for child in skeleton.nodes[joint].children:
-                joint_string += self._generate_joint_string(child.node_name, skeleton, joint_level)
-
-        # close the bracket
-        joint_string += tab_string + "}" + "\n"
-        return joint_string
-
-    def convert_quaternion_to_euler_frames(self, skeleton, quat_frames):
-        """ Converts the joint rotations from quaternion to euler rotations
-            * quat_frames: array of motion vectors with rotations represented as quaternion
-        """
-        src_joint_order = self.skeleton.get_joint_names()
-        dst_joint_order = self.joint_order
-        n_frames = len(quat_frames)
-        n_params = sum([len(skeleton.nodes[j].channels) for j in dst_joint_order])
-        euler_frames = np.zeros((n_frames, n_params))
-        for frame_idx, quat_frame in enumerate(quat_frames):
-            euler_frames[frame_idx,:TRANSLATION_LEN] = quat_frame[:TRANSLATION_LEN]
-            dst = 0 # the translation offset will be added
-            for joint_name in dst_joint_order:
-                channels = skeleton.nodes[joint_name].channels
-                n_channels = len(channels)
-                rotation_order = self.rotation_info[joint_name][0]
-                rotation_offset = self.rotation_info[joint_name][1]
-                src = skeleton.nodes[joint_name].index * QUAT_LEN + TRANSLATION_LEN
-                q = quat_frame[src:src+QUAT_LEN]
-                e = quaternion_to_euler(q, rotation_order)
-                params_start = dst + rotation_offset
-                params_end = params_start + EULER_LEN
-                euler_frames[frame_idx, params_start:params_end] = e
-                dst += n_channels
-        return euler_frames
-
-    def _generate_bvh_frame_string(self,euler_frames, frame_time):
-        """ Converts a list of euler frames into the BVH file representation.
-            * frame_time: time in seconds for the display of each keyframe
-        """
-
-        frame_parameter_string = "MOTION\n"
-        frame_parameter_string += "Frames: " + str(len(euler_frames)) + "\n"
-        frame_parameter_string += "Frame Time: " + str(frame_time) + "\n"
-        for frame in euler_frames:
-            frame_parameter_string += ' '.join([str(f) for f in frame])
-            frame_parameter_string += '\n'
-
-        return frame_parameter_string
-
-    def convert_quaternion_to_euler_frames_skipping_fixed_joints(self, frame_data, is_quaternion=False):
-        """ Converts the joint rotations from quaternion to euler rotations
-            Note: for the toe joints of the rocketbox skeleton a hard set value is used
-            * frame_data: array of motion vectors, either as euler or quaternion
-            * node_names: OrderedDict containing the nodes of the skeleton accessible by their name
-            * is_quaternion: defines wether the frame_data is quaternion data
-                            or euler data
-        """
-        skip_joints = not self.skeleton.is_motion_vector_complete(frame_data, is_quaternion)
-        if not is_quaternion:
-            if not skip_joints:
-                euler_frames = frame_data
-            else:
-                euler_frames = []
-                for frame in frame_data:
-                    euler_frame = self._get_euler_frame_from_partial_euler_frame(frame, skip_joints)
-                    euler_frames.append(euler_frame)
-        else:
-            # check whether or not "Bip" frames should be ignored
-            euler_frames = []
-            for frame in frame_data:
-                if skip_joints:
-                    euler_frame = self._get_euler_frame_from_partial_quaternion_frame(frame)
-                else:
-                    euler_frame = self._get_euler_frame_from_quaternion_frame(frame)
-                # print len(euler_frame), euler_frame
-                euler_frames.append(euler_frame)
-        return euler_frames
-
-    def _get_euler_frame_from_partial_euler_frame(self, frame, skip_joints):
-        euler_frame = frame[:3]
-        joint_idx = 0
-        for node_name in list(self.skeleton.nodes.keys()):
-            if len(self.skeleton.nodes[node_name].channels) > 0:# ignore end sites
-                if not node_name.startswith("Bip") or not skip_joints:
-                    if node_name in TOE_NODES:
-                        # special fix for unused toe parameters
-                        euler_frame = np.concatenate((euler_frame,([0.0, -90.0, 0.0])),axis=0)
-                    else:
-                        i = joint_idx * EULER_LEN + TRANSLATION_LEN
-                        euler_frame = np.concatenate((euler_frame, frame[i:i + EULER_LEN]), axis=0)
-                    joint_idx += 1
-                else:
-                    if node_name in TOE_NODES:
-                        # special fix for unused toe parameters
-                        euler_frame = np.concatenate((euler_frame,([0.0, -90.0, 0.0])),axis=0)
-                    else:
-                        euler_frame = np.concatenate((euler_frame,([0, 0, 0])),axis=0)  # set rotation to 0
-        return euler_frame
-
-    def _get_euler_frame_from_partial_quaternion_frame(self, frame):
-        euler_frame = frame[:3]     # copy root
-        joint_idx = 0
-        for node_name in list(self.skeleton.nodes.keys()):
-            if len(self.skeleton.nodes[node_name].channels) > 0:# ignore end sites completely
-                if not node_name.startswith("Bip"):
-                    i = joint_idx * QUAT_LEN + TRANSLATION_LEN
-                    if node_name == self.skeleton.root:
-                        channels = self.skeleton.nodes[node_name].channels[TRANSLATION_LEN:]
-                    else:
-                        channels = self.skeleton.nodes[node_name].channels
-                    euler = quaternion_to_euler(frame[i:i + QUAT_LEN], channels)
-                    euler_frame = np.concatenate((euler_frame, euler), axis=0)
-                    joint_idx += 1
-                else:
-                    if node_name in TOE_NODES:
-                        # special fix for unused toe parameters
-                        euler_frame = np.concatenate((euler_frame,([0.0, -90.0, 0.0])),axis=0)
-                    else:
-                        euler_frame = np.concatenate((euler_frame,([0, 0, 0])),axis=0)  # set rotation to 0
-        return euler_frame
-
-    def _get_euler_frame_from_quaternion_frame(self, frame):
-        euler_frame = frame[:3]  # copy root
-        joint_idx = 0
-        for node_name in list(self.skeleton.nodes.keys()):
-            if len(self.skeleton.nodes[node_name].channels) > 0:  # ignore end sites completely
-                if node_name in TOE_NODES:
-                    # special fix for unused toe parameters
-                    euler_frame = np.concatenate((euler_frame, ([0.0, -90.0, 0.0])), axis=0)
-                else:
-                    i = joint_idx * QUAT_LEN + TRANSLATION_LEN
-                    if node_name == self.skeleton.root:
-                        channels = self.skeleton.nodes[node_name].channels[TRANSLATION_LEN:]
-                    else:
-                        channels = self.skeleton.nodes[node_name].channels
-                    euler = quaternion_to_euler(frame[i:i + QUAT_LEN], channels)
-                    euler_frame = np.concatenate((euler_frame, euler), axis=0)
-                joint_idx += 1
-        return euler_frame
-
-
-
+        write_euler_frames_to_bvh_file(filename, self.skeleton, self.frame_data, self.frame_time)
