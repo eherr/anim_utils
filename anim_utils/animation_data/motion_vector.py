@@ -378,11 +378,11 @@ class MotionVector(object):
                     c_inv = identity
                 if key == "root":
                     new_f += f["root"][:3]
-                    dof = skeleton.nodes[key].rotation_order
+                    dof = b_data["asf_channels"]
                     values = amc_euler_to_quaternion(f[key][3:], dof, c, c_inv)
                     new_f += values
                 elif key in f:
-                    dof = skeleton.nodes[key].rotation_order
+                    dof = b_data["asf_channels"]
                     new_f += amc_euler_to_quaternion(f[key], dof, c, c_inv)
                 else:
                     new_f += [1,0,0,0]

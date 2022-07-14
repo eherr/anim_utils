@@ -516,15 +516,20 @@ class SkeletonBuilder(object):
             node.format_meta_data = data["root"]
             node.quaternion_frame_index = 0
             node.fixed = False
+            node.format_meta_data["asf_channels"] = deepcopy(node.rotation_order)
         elif "dof" in data["bones"][node_name]:
             channels = asf_to_bvh_channels(data["bones"][node_name]["dof"])
+            asf_channels = deepcopy(channels)
+            if len(channels) < 3:
+                channels = ['Xrotation','Yrotation','Zrotation']
             node = SkeletonJointNode(node_name, channels, parent, level)
+            node.format_meta_data = data["bones"][node_name]
+            node.format_meta_data["asf_channels"] = asf_channels
             if "offset" in data["bones"][node_name]:
                 node.offset = data["bones"][node_name]["offset"]
             #if parent.node_name is not "root":
             #    node.offset = np.array(data["bones"][parent.node_name]["direction"])
             #    node.offset *= data["bones"][parent.node_name]["length"]
-            node.format_meta_data = data["bones"][node_name]
             if node_name in skeleton.animated_joints:
                 node.quaternion_frame_index = skeleton.animated_joints.index(node_name)
                 node.fixed = False
@@ -534,14 +539,30 @@ class SkeletonBuilder(object):
             node.format_meta_data = data["bones"][node_name]
             node.quaternion_frame_index = -1
             node.fixed = True
+            node.format_meta_data["asf_channels"] = channels
+
+        n_children = 0
+        if node_name in data["children"]:
+            n_children = len(data["children"][node_name])
 
         skeleton.nodes[node_name] = node
         skeleton.nodes[node_name].children = []
-        if node_name in data["children"] and len(data["children"][node_name]) > 0:
+        if n_children > 0:
             node.index = node.quaternion_frame_index
             for c_name in data["children"][node_name]:
                 c_node = self._create_node_from_asf_data(skeleton, c_name, data, node, level+1)
                 if c_node is not None:
                     skeleton.nodes[node_name].children.append(c_node)
+        else:
+            node.index = node.quaternion_frame_index
+            channels = []
+            end_site_name = node_name +"EndSite"
+            end_site_node = SkeletonJointNode(end_site_name, channels, node, level+1)
+            end_site_node.quaternion_frame_index = -1
+            end_site_node.fixed = True
+            skeleton.nodes[end_site_name] = end_site_node
+            skeleton.nodes[end_site_name].children = []
+            skeleton.nodes[node_name].children.append(end_site_node)
+
 
         return node
