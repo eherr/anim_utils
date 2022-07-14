@@ -455,7 +455,7 @@ def convert_quaternion_to_euler_frames(skeleton, quat_frames):
 class BVHWriter(object):
     """Saves an input motion defined either as an array of euler or quaternion
     frame vectors to a BVH file.
-    Legacy interface that calls: write_euler_frames_to_bvh_file
+    Legacy interface that calls write_euler_frames_to_bvh_file
 
     Parameters
     ----------
