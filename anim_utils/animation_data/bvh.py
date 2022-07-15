@@ -46,156 +46,19 @@ DEFAULT_FRAME_TIME = 0.013889
 DEFAULT_ROTATION_ORDER = ['Xrotation','Yrotation','Zrotation']
 
 
-class BVHReader(object):
-    """Biovision file format class
-
-    Parameters
-    ----------
-     * infile: string
-    \t path to BVH file that is loaded initially
+class BVHData:
+    """Biovision data format class
     """
-    def __init__(self, infilename=""):
+    def __init__(self):
         self.node_names = OrderedDict()
         self.node_channels = []
         self.parent_dict = {}
-        self.frame_time = None
+        self.root = None
+        self.frame_time = DEFAULT_FRAME_TIME
         self.frames = None
-        self.root = ""  # needed for the bvh writer
-        if infilename != "":
-            infile = open(infilename, "r")
-            lines = infile.readlines()
-            _lines = []
-            for l in lines:
-                if l.strip() != "":
-                    _lines.append(l)
-            self.process_lines(_lines)
-            infile.close()
-        self.filename = os.path.split(infilename)[-1]
         self.animated_joints = None
+        self.filename = ""
 
-    @classmethod
-    def init_from_string(cls, skeleton_string):
-        bvh_reader = cls(infilename="")
-        lines = skeleton_string.split("\n")
-        bvh_reader.process_lines(lines)
-        return bvh_reader
-
-    def _read_skeleton(self, lines, line_index=0, n_lines=-1):
-        """Reads the skeleton part of a BVH file"""
-        line_index = line_index
-        parents = []
-        level = 0
-        name = None
-        if n_lines == -1:
-            n_lines = len(lines)
-
-        while line_index < n_lines:
-            if lines[line_index].startswith("MOTION"):
-                break
-
-            else:
-                if "{" in lines[line_index]:
-                    parents.append(name)
-                    level += 1
-
-                if "}" in lines[line_index]:
-                    level -= 1
-                    parents.pop(-1)
-                    if level == 0:
-                        break
-
-                line_split = lines[line_index].strip().split()
-
-                if line_split:
-
-                    if line_split[0] == "ROOT":
-                        name = line_split[1]
-                        self.root = name
-                        self.node_names[name] = {
-                            "children": [], "level": level, "channels": [], "channel_indices": []}
-
-                    elif line_split[0] == "JOINT":
-                        name = line_split[1]
-                        self.node_names[name] = {
-                            "children": [], "level": level, "channels": [], "channel_indices": []}
-                        self.node_names[parents[-1]]["children"].append(name)
-
-                    elif line_split[0] == "CHANNELS":
-                        for channel in line_split[2:]:
-                            self.node_channels.append((name, channel))
-                            self.node_names[name]["channels"].append(channel)
-                            self.node_names[name]["channel_indices"].append(len(self.node_channels) - 1)
-
-                    elif line_split == ["End", "Site"]:
-                        name += "_" + "".join(line_split)
-                        self.node_names[name] = {"level": level}
-                        # also the end sites need to be adde as children
-                        self.node_names[parents[-1]]["children"].append(name)
-
-                    elif line_split[0] == "OFFSET" and name in list(self.node_names.keys()):
-                        self.node_names[name]["offset"] = list(map(float, line_split[1:]))
-                line_index += 1
-        return line_index
-
-    def _read_frametime(self, lines, line_index):
-        """Reads the frametime part of a BVH file"""
-
-        if lines[line_index].startswith("Frame Time:"):
-            self.frame_time = float(lines[line_index].split(":")[-1].strip())
-        else:
-            self.frame_time = DEFAULT_FRAME_TIME
-
-    def _read_frames(self, lines, line_index, n_lines=-1):
-        """Reads the frames part of a BVH file"""
-        line_index = line_index
-        if n_lines == -1:
-            n_lines = len(lines)
-        frames = []
-        while line_index < n_lines:
-            line_split = lines[line_index].strip().split()
-            frames.append(np.array(list(map(float, line_split))))
-            line_index += 1
-
-        self.frames = np.array(frames)
-        return line_index
-
-    def process_lines(self, lines):
-        """Reads BVH file infile
-
-        Parameters
-        ----------
-         * infile: Filelike object, optional
-        \tBVH file
-
-        """
-        line_index = 0
-        n_lines = len(lines)
-        while line_index < n_lines:
-            if lines[line_index].startswith("HIERARCHY"):
-                line_index = self._read_skeleton(lines, line_index, n_lines)
-            if lines[line_index].startswith("MOTION"):
-                self._read_frametime(lines, line_index+2)
-                line_index = self._read_frames(lines, line_index+3, n_lines)
-            else:
-                line_index += 1
-
-    def get_channel_indices(self, node_channels):
-        """Returns indices for specified channels
-
-        Parameters
-        ----------
-         * node_channels: 2-tuples of strings
-        \tEach tuple contains joint name and channel name
-        \te.g. ("hip", "Xposition")
-
-        """
-        return [self.node_channels.index(nc) for nc in node_channels]
-
-    def get_node_channels(self, node_name):
-        channels = None
-        if node_name in self.node_names and "channels" in self.node_names[node_name]:
-            channels = self.node_names[node_name]["channels"]
-        return channels
 
     def get_node_angles(self, node_name, frame):
         """Returns the rotation for one node at one frame of an animation
@@ -203,8 +66,6 @@ class BVHReader(object):
         ----------
         * node_name: String
         \tName of node
-        * bvh_reader: BVHReader
-        \t BVH data structure read from a file
         * frame: np.ndarray
         \t animation keyframe frame
 
@@ -258,7 +119,7 @@ class BVHReader(object):
     def convert_skeleton_rotation_order(self, rotation_order):
         # update channel indices
         rotation_list = self.node_names[self.root]["channels"][3:]
-        new_indices = sorted(range(len(rotation_list)), key=lambda k : rotation_list[k])
+        #new_indices = sorted(range(len(rotation_list)), key=lambda k : rotation_list[k])
         for node_name, node in self.node_names.items():
             if 'End' not in node_name:
                 if len(node['channels']) == 6:
@@ -297,6 +158,138 @@ class BVHReader(object):
                 ch_indices = self.get_channel_indices(ch)
                 scaled_params = [scale * o for o in self.frames[:, ch_indices]]
                 self.frames[:, ch_indices] = scaled_params
+
+    def get_channel_indices(self, node_channels):
+        """Returns indices for specified channels
+
+        Parameters
+        ----------
+         * node_channels: 2-tuples of strings
+        \tEach tuple contains joint name and channel name
+        \te.g. ("hip", "Xposition")
+
+        """
+        return [self.node_channels.index(nc) for nc in node_channels]
+
+    def get_node_channels(self, node_name):
+        channels = None
+        if node_name in self.node_names and "channels" in self.node_names[node_name]:
+            channels = self.node_names[node_name]["channels"]
+        return channels
+
+class BVHReader(BVHData):
+    """Biovision file format class
+
+    Parameters
+    ----------
+     * filename: string
+    \t path to BVH file that is loaded initially
+    """
+    def __init__(self, filename=""):
+        super().__init__()
+        if filename != "":
+            self.filename = os.path.split(filename)[-1]
+            with open(filename, "r") as file:
+                lines = file.readlines()
+            self.process_lines(lines)
+
+    @classmethod
+    def init_from_string(cls, skeleton_string):
+        bvh_reader = cls(infilename="")
+        lines = skeleton_string.split("\n")
+        bvh_reader.process_lines(lines)
+        return bvh_reader
+
+    def process_lines(self, lines):
+        """Reads lines from a BVH file
+
+        Parameters
+        ----------
+         * lines: list of strings
+
+        """
+        lines = [l for l in lines if l.strip() != ""]
+        line_index = 0
+        n_lines = len(lines)
+        while line_index < n_lines:
+            if lines[line_index].startswith("HIERARCHY"):
+                line_index = self._read_skeleton(lines, line_index, n_lines)
+            if lines[line_index].startswith("MOTION") and n_lines > line_index+3:
+                self._read_frametime(lines, line_index+2)
+                line_index = self._read_frames(lines, line_index+3, n_lines)
+            else:
+                line_index += 1
+
+    def _read_skeleton(self, lines, line_index, n_lines):
+        """Reads the skeleton part of a BVH file"""
+        line_index = line_index
+        parents = []
+        node_name = None
+        parent_name = None
+        self.node_names = OrderedDict()
+        self.node_channels = []
+        while line_index < n_lines and not lines[line_index].startswith("MOTION"):
+            split_line = lines[line_index].strip().split()
+            if not split_line:
+                continue
+            if "{" in split_line:
+                parents.append(node_name)
+            elif "}" in split_line:
+                parents.pop(-1)
+            level = len(parents)
+            if level > 0:
+                parent_name = parents[-1]
+            node_name = self._read_split_joint_line(split_line, level, node_name, parent_name)
+            if self.root is None:
+                self.root = node_name
+            line_index += 1
+        return line_index
+
+
+    def _read_split_joint_line(self, split_line, level, node_name, parent):
+        if split_line[0] == "ROOT" or split_line[0] == "JOINT":
+            node_name = split_line[1]
+            node_data = {"children": [], "level": level, "channels": [], "channel_indices": []}
+            self.node_names[node_name] = node_data
+            if parent is not None:
+                self.node_names[parent]["children"].append(node_name)
+
+        elif split_line[0] == "CHANNELS":
+            for channel in split_line[2:]:
+                self.node_channels.append((node_name, channel))
+                self.node_names[node_name]["channels"].append(channel)
+                self.node_names[node_name]["channel_indices"].append(len(self.node_channels) - 1)
+
+        elif split_line == ["End", "Site"]:
+            end_site_name = node_name  + "_" + "".join(split_line)
+            self.node_names[end_site_name] = {"level": level}
+            # also the end sites need to be adde as children
+            self.node_names[node_name]["children"].append(end_site_name)
+            node_name = end_site_name
+
+        elif split_line[0] == "OFFSET" and node_name is not None:
+            self.node_names[node_name]["offset"] = list(map(float, split_line[1:]))
+        return node_name
+
+    def _read_frametime(self, lines, line_index):
+        """Reads the frametime part of a BVH file"""
+        if lines[line_index].startswith("Frame Time:"):
+            self.frame_time = float(lines[line_index].split(":")[-1].strip())
+
+    def _read_frames(self, lines, line_index, n_lines=-1):
+        """Reads the frames part of a BVH file"""
+        line_index = line_index
+        if n_lines == -1:
+            n_lines = len(lines)
+        frames = []
+        while line_index < n_lines:
+            line_split = lines[line_index].strip().split()
+            frames.append(np.array(list(map(float, line_split))))
+            line_index += 1
+
+        self.frames = np.array(frames)
+        return line_index
+
 
 
 def write_euler_frames_to_bvh_file(filename, skeleton, euler_frames, frame_time):
