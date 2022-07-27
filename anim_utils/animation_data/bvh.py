@@ -235,7 +235,7 @@ class BVHReader(BVHData):
             if "{" in split_line:
                 parents.append(node_name)
             elif "}" in split_line:
-                parents.pop(-1)
+                node_name = parents.pop(-1)
             level = len(parents)
             if level > 0:
                 parent_name = parents[-1]
@@ -261,11 +261,10 @@ class BVHReader(BVHData):
                 self.node_names[node_name]["channel_indices"].append(len(self.node_channels) - 1)
 
         elif split_line == ["End", "Site"]:
-            end_site_name = node_name  + "_" + "".join(split_line)
-            self.node_names[end_site_name] = {"level": level}
+            node_name = node_name  + "_" + "".join(split_line)
+            self.node_names[node_name] = {"level": level}
             # also the end sites need to be adde as children
-            self.node_names[node_name]["children"].append(end_site_name)
-            node_name = end_site_name
+            self.node_names[parent]["children"].append(node_name)
 
         elif split_line[0] == "OFFSET" and node_name is not None:
             self.node_names[node_name]["offset"] = list(map(float, split_line[1:]))
@@ -474,3 +473,6 @@ class BVHWriter(object):
 
     def write(self, filename):
         write_euler_frames_to_bvh_file(filename, self.skeleton, self.frame_data, self.frame_time)
+        
+    def generate_bvh_string(self):
+        return generate_bvh_string(self.skeleton, self.frame_data, self.frame_time)
