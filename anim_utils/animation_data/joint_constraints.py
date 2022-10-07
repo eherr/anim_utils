@@ -259,17 +259,37 @@ class JointConstraint(object):
     def __init__(self):
         self.is_static = False
 
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        return JointConstraint()
+
     def get_axis(self):
         return OPENGL_UP
 
     def apply(self, q):
         return q
 
+class StaticConstraint(JointConstraint):
+    def __init__(self):
+        JointConstraint.__init__(self)
+        self.is_static = True
+
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        return StaticConstraint()
+
 class BallSocketConstraint(JointConstraint):
     def __init__(self, axis, k):
         JointConstraint.__init__(self)
         self.axis = axis
         self.k = k
+
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        axis = np.array(data["axis"])
+        k = np.radians(data["k"])
+        c = BallSocketConstraint(axis, k)
+        return c
 
     def apply(self, q):
         ref_q = [1,0,0,0]
@@ -285,6 +305,13 @@ class ConeConstraint(JointConstraint):
         JointConstraint.__init__(self)
         self.axis = axis
         self.k = k
+
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        axis = np.array(data["axis"])
+        k = np.radians(data["k"])
+        c = ConeConstraint(axis, k)
+        return c
 
     def apply(self, q):
         ref_q = [1, 0, 0, 0]
@@ -303,6 +330,18 @@ class SpineConstraint(JointConstraint):
         self.swing_min = swing_min
         self.swing_max = swing_max
         self.joint_name = ""
+    
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        axis = np.array(data["axis"])
+        tk1 = np.radians(data["tk1"])
+        tk2 = np.radians(data["tk2"])
+        sk1 = np.radians(data["sk1"])
+        sk2 = np.radians(data["sk2"])
+        ref_q = [1,0,0,0]
+        c = SpineConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
+        c.joint_name = joint_name
+        return c
 
     def apply(self, q):
         #print("apply spine constraint",self.joint_name, q)
@@ -324,6 +363,18 @@ class HeadConstraint(JointConstraint):
         self.swing_max = swing_max
         self.joint_name = ""
 
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        axis = np.array(data["axis"])
+        tk1 = np.radians(data["tk1"])
+        tk2 = np.radians(data["tk2"])
+        sk1 = np.radians(data["sk1"])
+        sk2 = np.radians(data["sk2"])
+        ref_q = [1,0,0,0] 
+        c = HeadConstraint(ref_q, axis, tk1, tk2, sk1, sk2)
+        c.joint_name = joint_name
+        return c
+
     def apply(self, q):
         q = apply_head_constraint(q, self.ref_q, self.axis, self.twist_min, self.twist_max, self.swing_min, self.swing_max)
         return q
@@ -341,6 +392,16 @@ class HingeConstraint2(JointConstraint):
         else:
             self.angle_range = None
         self.verbose = False
+        
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        swing_axis = np.array(data["swing_axis"])
+        twist_axis = np.array(data["twist_axis"])
+        deg_angle_range = None
+        if "k1" in data and "k2" in data:
+            deg_angle_range = [data["k1"], data["k2"]]
+        c = HingeConstraint2(swing_axis, twist_axis, deg_angle_range)
+        return c
 
     def apply(self, q):
         sq, tq = swing_twist_decomposition(q, self.swing_axis)
@@ -393,6 +454,16 @@ class ShoulderConstraint(JointConstraint):
         self.k2 = k2
         self.k = k
 
+    @classmethod
+    def from_dict(cls, joint_name, data):
+        axis = np.array(data["axis"])
+        k = np.radians(data["k"])
+        k1 = np.radians(data["k1"])
+        k2 = np.radians(data["k2"])
+        #print("add shoulder socket constraint to", joint_name)
+        c = ShoulderConstraint(axis, k, k1, k2)
+        return c
+
     def apply(self, q):
         ref_q = [1, 0, 0, 0]
         q = apply_conic_constraint(q, ref_q, self.axis, self.k)
@@ -405,4 +476,12 @@ class ShoulderConstraint(JointConstraint):
 
 
 
+CONSTRAINT_MAP= dict()
+CONSTRAINT_MAP["static"] = StaticConstraint
+CONSTRAINT_MAP["hinge"] = HingeConstraint2
+CONSTRAINT_MAP["ball"] = BallSocketConstraint
+CONSTRAINT_MAP["cone"] = ConeConstraint
+CONSTRAINT_MAP["shoulder"] = ShoulderConstraint
+CONSTRAINT_MAP["head"] = HeadConstraint
+CONSTRAINT_MAP["spine"] = SpineConstraint
 
