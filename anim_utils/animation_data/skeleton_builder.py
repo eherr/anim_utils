@@ -143,39 +143,32 @@ class SkeletonBuilder(object):
         return skeleton
 
     def construct_hierarchy_from_bvh(self, skeleton, joint_list, node_info, node_name, level):
+        
+        channels = []
         if "channels" in node_info[node_name]:
             channels = node_info[node_name]["channels"]
-        else:
-            channels = []
+        is_fixed = True
+        quaternion_frame_index = -1
+        if node_name in skeleton.animated_joints:
+            is_fixed = False
+            quaternion_frame_index = skeleton.animated_joints.index(node_name)
+        joint_index = -1
         if node_name in joint_list:
             joint_index = joint_list.index(node_name)
-        else:
-            joint_index = -1
         if node_name == skeleton.root:
             node = SkeletonRootNode(node_name, channels, None, level)
-            if node_name in skeleton.animated_joints:
-                node.fixed = False
-                node.quaternion_frame_index = skeleton.animated_joints.index(node_name)
-            else:
-                node.fixed = True
-            node.index = joint_index
         elif "children" in list(node_info[node_name].keys()) and len(node_info[node_name]["children"]) > 0:
             node = SkeletonJointNode(node_name, channels, None, level)
-            if node_name in skeleton.animated_joints:
-                node.fixed = False
-                node.quaternion_frame_index = skeleton.animated_joints.index(node_name)
-            else:
-                node.fixed = True
             offset = joint_index * 4 + 3
             node.rotation = skeleton.reference_frame[offset: offset + 4]
-            node.index = joint_index
         else:
             node = SkeletonEndSiteNode(node_name, channels, None, level)
-
+        node.fixed = is_fixed
+        node.quaternion_frame_index = quaternion_frame_index
         node.index = joint_index
         node.offset = node_info[node_name]["offset"]
         skeleton.nodes[node_name] = node
-        if "children" in list(node_info[node_name].keys()):
+        if "children" in node_info[node_name]:
             for c in node_info[node_name]["children"]:
                 c_node = self.construct_hierarchy_from_bvh(skeleton, joint_list, node_info, c, level+1)
                 c_node.parent = node
