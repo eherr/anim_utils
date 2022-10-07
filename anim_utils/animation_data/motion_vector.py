@@ -77,28 +77,19 @@ def amc_euler_to_quaternion(angles, dofs, c, c_inv, align_quat=True):
 class MotionVector(object):
     """ Contains a list of skeleton animation frames. Each frame represents a list of parameters for the degrees of freedom of a skeleton.
     """
-    def __init__(self, skeleton=None, algorithm_config=None, rotation_type=ROTATION_TYPE_QUATERNION):
+    def __init__(self, skeleton=None, **kwargs):
         self.n_frames = 0
         self._prev_n_frames = 0
         self.frames = None
         self.start_pose = None
-        self.rotation_type = rotation_type
-        self.apply_spatial_smoothing = False
-        self.apply_foot_alignment = False
-        self.smoothing_window = 0
-        self.spatial_smoothing_method = "smoothing"
+        self.rotation_type = kwargs.get("rotation_type",ROTATION_TYPE_QUATERNION)
+        self.apply_spatial_smoothing = kwargs.get("apply_spatial_smoothing",False) 
+        self.apply_foot_alignment = kwargs.get("apply_foot_alignment",False)
+        self.smoothing_window = kwargs.get("smoothing_window",0)
+        self.spatial_smoothing_method = kwargs.get("spatial_smoothing_method","smoothing")
         self.frame_time = 1.0/30.0
         self.skeleton = skeleton
 
-        if algorithm_config is not None:
-            settings = algorithm_config["smoothing_settings"]
-            self.apply_spatial_smoothing = settings["spatial_smoothing"]
-            self.smoothing_window = settings["spatial_smoothing_window"]
-
-            if "spatial_smoothing_method" in settings:
-                self.spatial_smoothing_method = settings["spatial_smoothing_method"]
-            if "apply_foot_alignment" in settings:
-                self.apply_foot_alignment = settings["apply_foot_alignment"]
 
     def from_bvh_reader(self, bvh_reader, filter_joints=True, animated_joints=None):
         if self.rotation_type == ROTATION_TYPE_QUATERNION:
