@@ -122,6 +122,10 @@ class SkeletonBuilder(object):
         skeleton.frame_time = bvh_reader.frame_time
         skeleton.root = bvh_reader.root
         skeleton.aligning_root_dir = DEFAULT_ROOT_DIR
+        if reference_frame is None:
+            skeleton.reference_frame = read_reference_frame_from_bvh_reader(bvh_reader)
+        else:
+            skeleton.reference_frame = reference_frame
         skeleton.reference_frame_length = len(skeleton.reference_frame)
         skeleton.tool_nodes = []
         if tool_bones is not None:
@@ -132,10 +136,6 @@ class SkeletonBuilder(object):
 
         create_euler_frame_indices(skeleton)
         SkeletonBuilder.set_meta_info(skeleton)
-        if reference_frame is None:
-            skeleton.reference_frame = read_reference_frame_from_bvh_reader(bvh_reader)
-        else:
-            skeleton.reference_frame = reference_frame
 
         if skeleton_model is not None:
             skeleton.skeleton_model = skeleton_model
