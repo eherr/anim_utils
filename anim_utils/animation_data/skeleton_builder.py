@@ -224,7 +224,6 @@ class SkeletonBuilder(object):
                     extract_animated_joints(c, animated_joints)
 
         skeleton = Skeleton()
-        print("load from json")
         if animated_joints is not None:
             skeleton.animated_joints = animated_joints
         elif "animated_joints" in data:
@@ -404,12 +403,12 @@ class SkeletonBuilder(object):
 
 
     @classmethod
-    def get_reference_frame(cls, animated_joints):
-        n_animated_joints = len(animated_joints)
+    def generate_reference_frame(cls, skeleton):
+        n_animated_joints = len(skeleton.animated_joints)
         reference_frame = np.zeros(n_animated_joints * 4 + 3)
         o = 3
-        for n in range(n_animated_joints):
-            reference_frame[o:o + 4] = [1, 0, 0, 0]
+        for n in skeleton.animated_joints:
+            reference_frame[o:o + 4] = skeleton.nodes[n].rotation
             o += 4
         return reference_frame
 
@@ -499,6 +498,6 @@ class SkeletonBuilder(object):
         skeleton._chain_names = skeleton._generate_chain_names()
         skeleton.aligning_root_node = skeleton.root
         if skeleton.reference_frame is None:
-            skeleton.reference_frame = SkeletonBuilder.get_reference_frame(skeleton.animated_joints)
+            skeleton.reference_frame = SkeletonBuilder.generate_reference_frame(skeleton)
             skeleton.reference_frame_length = len(skeleton.reference_frame)
         create_identity_frame(skeleton)
