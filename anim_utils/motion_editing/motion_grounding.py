@@ -91,9 +91,10 @@ def get_heel_offset2(skeleton, foot_name, toe_name, frame):
     toe_offset = skeleton.nodes[toe_name].offset
     #if len(skeleton.nodes[toe_name].children) > 0:
     #   toe_offset += skeleton.nodes[toe_name].children[0].offset
-    up_vector = np.array(skeleton.skeleton_model["cos_map"][foot_name]["y"])
+    foot_cos_map =skeleton.skeleton_model["cos_map"][foot_name]
+    up_vector = np.array(foot_cos_map["y"], dtype=np.float32)
     up_vector /= np.linalg.norm(up_vector)
-    x_vector = np.array(skeleton.skeleton_model["cos_map"][foot_name]["x"])
+    x_vector = np.array(foot_cos_map["x"], dtype=np.float32)
     x_vector /= np.linalg.norm(x_vector)
     z_vector = np.cross(up_vector, x_vector)
     z_vector /= np.linalg.norm(z_vector)
