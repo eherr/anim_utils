@@ -30,7 +30,8 @@ import collections
 import numpy as np
 from transformations import euler_matrix, quaternion_from_matrix, quaternion_matrix, euler_from_matrix
 from .utils import rotation_order_to_string
-from .constants import DEFAULT_ROTATION_ORDER
+from .constants import DEFAULT_ROTATION_ORDER, LEN_EULER, LEN_QUAT, LEN_ROOT_POS
+
 
 
 
@@ -90,11 +91,11 @@ def quaternion_to_euler(quat, rotation_order=DEFAULT_ROTATION_ORDER):
     return euler_angles
 
 
-def convert_euler_to_quaternion_frame(bvh_reader, e_frame, filter_values=True, animated_joints=None):
+def convert_euler_to_quaternion_frame(bvh_data, e_frame, filter_values=True, animated_joints=None):
     """Convert a BVH frame into an ordered dict of quaternions for each skeleton node
     Parameters
     ----------
-    * bvh_reader: BVHReader
+    * bvh_data: BVHData
     \t Contains skeleton information
     * frame_vector: np.ndarray
     \t animation keyframe frame represented by Euler angles
@@ -106,31 +107,37 @@ def convert_euler_to_quaternion_frame(bvh_reader, e_frame, filter_values=True, a
     * quat_frame: OrderedDict that contains a quaternion for each joint
     """
     if animated_joints is None:
-        animated_joints = list(bvh_reader.node_names.keys())
+        animated_joints = list(bvh_data.node_names.keys())
     n_dims = len(animated_joints)*4
     quat_frame = np.zeros((n_dims))
     offset = 0
     for node_name in animated_joints:
-        if bvh_reader.get_node_channels(node_name) is not None:
-            angles, order = bvh_reader.get_node_angles(node_name, e_frame)
+        if bvh_data.get_node_channels(node_name) is not None:
+            angles, order = bvh_data.get_node_angles(node_name, e_frame)
             q = euler_to_quaternion(angles, order, filter_values)
             quat_frame[offset:offset+4] = q
             offset +=4
     return quat_frame
 
 
-def convert_euler_frames_to_quaternion_frames(bvh_reader, euler_frames, filter_values=True, animated_joints=None):
+def convert_euler_frames_to_quaternion_frames(bvh_data, euler_frames, filter_values=True, animated_joints=None):
     """
-    :param bvhreader: a BVHReader instance to store skeleton information
-    :param euler_frames: a list of euler frames
-    :return: a list of quaternion frames
+    Parameters
+    ----------
+    * bvh_data: BVHData
+    \t Contains skeleton information
+    * euler_frames: np.ndarray
+    \t list of euler frames
+    Returns:
+    ----------
+    * quater_frames: a list of quaternion frames
     """
     if animated_joints is None:
-        animated_joints = list(bvh_reader.node_names.keys())
+        animated_joints = list(bvh_data.node_names.keys())
     quat_frames = []
     prev_frame = None
     for e_frame in euler_frames:
-        q_frame = convert_euler_to_quaternion_frame(bvh_reader, e_frame, filter_values, animated_joints=animated_joints)
+        q_frame = convert_euler_to_quaternion_frame(bvh_data, e_frame, filter_values, animated_joints=animated_joints)
         o = 0
         if prev_frame is not None and filter_values:
             for joint_name in animated_joints:
@@ -144,72 +151,31 @@ def convert_euler_frames_to_quaternion_frames(bvh_reader, euler_frames, filter_v
 
 
 
-def convert_quaternion_frames_to_euler_frames(quaternion_frames):
+def convert_quaternion_frames_to_euler_frames(quat_frames):
     """Returns an nparray of Euler frames
 
     Parameters
     ----------
-
-    :param quaternion_frames:
-     * quaternion_frames: List of quaternion frames
+     * quat_frames: List of quaternion frames
     \tQuaternion frames that shall be converted to Euler frames
 
     Returns
     -------
-
     * euler_frames: numpy array
     \tEuler frames
     """
-
-    def gen_4_tuples(it):
-        """Generator of n-tuples from iterable"""
-
-        return list(zip(it[0::4], it[1::4], it[2::4], it[3::4]))
-
-    def get_euler_frame(quaternionion_frame):
-        """Converts a quaternion frame into an Euler frame"""
-
-        euler_frame = list(quaternionion_frame[:3])
-        for quaternion in gen_4_tuples(quaternionion_frame[3:]):
-            euler_frame += quaternion_to_euler(quaternion)
-
-        return euler_frame
-
-    euler_frames = list(map(get_euler_frame, quaternion_frames))
-
-    return np.array(euler_frames)
-
-
-def convert_quaternion_to_euler(quaternion_frames):
-    """Returns an nparray of Euler frames
-
-    Parameters
-    ----------
-
-     * quaternion_frames: List of quaternion frames
-    \tQuaternion frames that shall be converted to Euler frames
-
-    Returns
-    -------
-
-    * euler_frames: numpy array
-    \tEuler frames
-    """
-
-    def gen_4_tuples(it):
-        """Generator of n-tuples from iterable"""
-
-        return list(zip(it[0::4], it[1::4], it[2::4], it[3::4]))
-
-    def get_euler_frame(quaternionion_frame):
-        """Converts a quaternion frame into an Euler frame"""
-
-        euler_frame = list(quaternionion_frame[:3])
-        for quaternion in gen_4_tuples(quaternionion_frame[3:]):
-            euler_frame += quaternion_to_euler(quaternion)
-
-        return euler_frame
-
-    euler_frames = list(map(get_euler_frame, quaternion_frames))
-
-    return np.array(euler_frames)
+    n_frames = len(quat_frames)
+    assert n_frames > 0 
+    n_joints = int((len(quat_frames[0])-LEN_ROOT_POS) /LEN_QUAT)
+    n_params = n_joints*LEN_EULER + LEN_ROOT_POS
+    euler_frames = np.zeros((n_frames, n_params))
+    for frame_idx, quat_frame in enumerate(quat_frames):
+        euler_frames[frame_idx,:LEN_ROOT_POS] = quat_frame[:LEN_ROOT_POS]
+        src = LEN_ROOT_POS
+        dst = LEN_ROOT_POS
+        for i in range(n_joints):
+            q = quat_frame[src:src+LEN_QUAT]
+            euler_frames[frame_idx, dst:dst+LEN_EULER] = quaternion_to_euler(q)
+            dst += LEN_EULER
+            src += LEN_QUAT
+    return euler_frames
