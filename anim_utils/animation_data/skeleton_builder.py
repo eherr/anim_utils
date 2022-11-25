@@ -24,6 +24,7 @@ import collections
 from copy import deepcopy
 import json
 import numpy as np
+
 from .skeleton import Skeleton
 from .skeleton_node import SkeletonRootNode, SkeletonJointNode, SkeletonEndSiteNode, SKELETON_NODE_TYPE_JOINT, SKELETON_NODE_TYPE_END_SITE
 from .quaternion_frame import convert_euler_to_quaternion_frame
@@ -246,7 +247,7 @@ class SkeletonBuilder(object):
 
         skeleton.frame_time = data["frame_time"]
         skeleton.nodes = collections.OrderedDict()
-        root = self._create_node_from_desc(skeleton, data, data["root"]["name"], None, 0)
+        root = self._create_node_from_desc(skeleton, data["root"], None, 0)
         skeleton.root = root.node_name
         if "tool_nodes" in data:
             skeleton.tool_nodes = data["tool_nodes"]
@@ -264,15 +265,14 @@ class SkeletonBuilder(object):
     def load_from_fbx_data(self, data):
         skeleton = Skeleton()
         skeleton.nodes = collections.OrderedDict()
-
         skeleton.animated_joints = data["animated_joints"]
         skeleton.root = data["root"]
-        self._create_node_from_desc(skeleton, data, skeleton.root, None, 0)
+        self._create_node_from_fbx_node_desc(skeleton, data, skeleton.root, None, 0)
         skeleton.frame_time = data["frame_time"]
         SkeletonBuilder.set_meta_info(skeleton)
         return skeleton
 
-    def _create_node_from_desc(self, skeleton, data, node_name, parent, level=0):
+    def _create_node_from_fbx_node_desc(self, skeleton, data, node_name, parent, level=0):
         node_data = data["nodes"][node_name]
         channels = node_data["channels"]
         if parent is None:
@@ -294,9 +294,35 @@ class SkeletonBuilder(object):
         node.children = []
         skeleton.nodes[node_name] = node
         for c_name in node_data["children"]:
-            c_node = self._create_node_from_desc(skeleton, data, c_name, node, level+1)
+            c_node = self._create_node_from_fbx_node_desc(skeleton, data, c_name, node, level+1)
             node.children.append(c_node)
         
+        return node
+
+    def _create_node_from_desc(self, skeleton, data, parent, level):
+        node_name = data["name"]
+        channels = data["channels"]
+        if parent is None:
+            node = SkeletonRootNode(node_name, channels, parent, level)
+        elif data["node_type"] == SKELETON_NODE_TYPE_JOINT:
+            node = SkeletonJointNode(node_name, channels, parent, level)
+        else:
+            node = SkeletonEndSiteNode(node_name, channels, parent, level)
+        # node.fixed = data["fixed"]
+        node.index = data["index"]
+        node.offset = np.array(data["offset"])
+        node.rotation = np.array(data["rotation"])
+        if node_name in skeleton.animated_joints:
+            node.quaternion_frame_index = skeleton.animated_joints.index(node_name)
+            node.fixed = False
+        else:
+            node.quaternion_frame_index = -1
+            node.fixed = True
+
+        skeleton.nodes[node_name] = node
+        skeleton.nodes[node_name].children = []
+        for c_desc in data["children"]:
+            skeleton.nodes[node_name].children.append(self._create_node_from_desc(skeleton, c_desc, node, level+1))
         return node
 
     def get_joint_desc(self, data, name):
