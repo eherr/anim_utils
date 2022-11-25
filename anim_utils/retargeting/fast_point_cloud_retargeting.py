@@ -30,7 +30,16 @@ import math
 from .constants import OPENGL_UP_AXIS, GAME_ENGINE_SPINE_OFFSET_LIST
 from .utils import normalize, align_axis, find_rotation_between_vectors, align_root_translation, to_local_cos, get_quaternion_rotation_by_name, apply_additional_rotation_on_frames, project_vector_on_axis, quaternion_from_vector_to_vector
 from transformations import quaternion_matrix, quaternion_multiply, quaternion_about_axis, quaternion_from_matrix
-from .point_cloud_retargeting import create_local_cos_map_from_skeleton_axes_with_map, apply_manual_fixes, get_parent_map, get_children_map, JOINT_CHILD_MAP
+from .point_cloud_retargeting import create_local_cos_map_from_skeleton_axes_with_map, get_parent_map, get_children_map, JOINT_CHILD_MAP
+
+
+
+
+def apply_manual_fixes(joint_cos_map, joints):
+    for j in joints:
+        if j in joint_cos_map:
+            joint_cos_map[j]["x"] *= -1
+
 
 def get_child_joint2(skeleton_model, inv_joint_map, node_name, src_children_map):
     """ Warning output is random if there are more than one child joints
