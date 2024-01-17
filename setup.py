@@ -24,6 +24,6 @@ setup(
     license='MIT',
     keywords="skeleton animation data retargeting",
     packages=find_packages(exclude=("examples",)),
-    python_requires=">=3.5.*, <4",
+    python_requires=">=3.5, <4",
     install_requires=requirements,
 )
