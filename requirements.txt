@@ -1,4 +1,4 @@
-numpy
-scipy
-matplotlib
-transformations
+numpy>=1.14.2
+scipy==1.5.4
+matplotlib==3.3.4
+transformations==2019.4.22
